@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,8 +20,12 @@ namespace Analyser
 	    {
 		    var output = new Entry(textToParse);
 		    output.Id = await output.ReadAmount(34);
-		    var typeLength = (byte)await output.ReadSingle();
-		    await output.ReadAmount(3);//Useless data ? nope an int
+		    var typeLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)),0);
+		    if (typeLength > byte.MaxValue)
+		    {
+			    return output;
+		    }
+		    //await output.ReadAmount(3);//Useless data ? nope an int
 		    output.EntryType = await output.ReadAmount(typeLength);
 		    if (output.EntryType != "playerElim\0")
 		    {
@@ -29,13 +34,12 @@ namespace Analyser
 		    }
 
 		    output.UnknowData = await output.ReadAmount(56);
+		    var ah = Encoding.ASCII.GetBytes(output.UnknowData);
+		    var userNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
 
-		    output.UserNameLength = (byte) await output.ReadSingle();
-		    await output.ReadAmount(3); //TODO ???
-		    output.UserName = await output.ReadAmount(output.UserNameLength);
-		    output.SecondUserNameLength = (byte)await output.ReadSingle();
-		    await output.ReadAmount(3); //TODO ???
-			output.SecondUsername = await output.ReadAmount(output.SecondUserNameLength);
+			output.UserName = await output.ReadAmount(userNameLength);
+		    var secondUserNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
+			output.SecondUsername = await output.ReadAmount(secondUserNameLength);
 		    return output;
 	    }
 
@@ -56,9 +60,7 @@ namespace Analyser
 	    public string Id { get; set; }
 	    public string EntryType { get; set; } //19 bytes
 		public string UnknowData { get; set; }//51 bytes
-		public byte UserNameLength { get; set; }
 		public string UserName { get; set; }
-		public byte SecondUserNameLength { get; set; }
 		public string SecondUsername { get; set; }
 	    public string Data { get; set; }
 	}
