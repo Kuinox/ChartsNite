@@ -10,15 +10,15 @@ namespace Analyser
     class Entry
     {
 	    readonly TextReader _textToParse;
-
-	    public Entry(TextReader textToParse)
+	    byte[] _bytes;
+	    public Entry(TextReader textToParse, byte[] bytes)
 	    {
 		    _textToParse = textToParse;
-
+		    _bytes = bytes;
 	    }
-	    public static async Task<Entry> GetEntry(TextReader textToParse)
+	    public static async Task<Entry> GetEntry(TextReader textToParse, byte[] bytes)
 	    {
-		    var output = new Entry(textToParse);
+		    var output = new Entry(textToParse, bytes);
 		    output.Id = await output.ReadAmount(34);
 		    var typeLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)),0);
 		    if (typeLength > byte.MaxValue)
@@ -32,14 +32,14 @@ namespace Analyser
 			    Console.WriteLine("Unsupported entry");
 			    return output;
 		    }
+		    output.UnknowData = await output.ReadAmount(4*3);//3 unknow int
+		    var entrySize = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
+		    output.KillEntry = new KillEntry(await output.ReadAmount(entrySize));
 
-		    output.UnknowData = await output.ReadAmount(56);
-		    var ah = Encoding.ASCII.GetBytes(output.UnknowData);
-		    var userNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
-
-			output.UserName = await output.ReadAmount(userNameLength);
+		    /*var userNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
+			output.VictimUserName = await output.ReadAmount(userNameLength);
 		    var secondUserNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
-			output.SecondUsername = await output.ReadAmount(secondUserNameLength);
+			output.KillerUsername = await output.ReadAmount(secondUserNameLength);*/
 		    return output;
 	    }
 
@@ -50,18 +50,11 @@ namespace Analyser
 		    return new string(buffer);
 	    }
 
-	    public async Task<char> ReadSingle()
-	    {
-		    return (await ReadAmount(1))[0];
-	    }
-		
-	    
-
 	    public string Id { get; set; }
-	    public string EntryType { get; set; } //19 bytes
-		public string UnknowData { get; set; }//51 bytes
-		public string UserName { get; set; }
-		public string SecondUsername { get; set; }
-	    public string Data { get; set; }
+	    public string EntryType { get; set; }
+		public string UnknowData { get; set; }
+		public KillEntry KillEntry { get; set; }
+
+
 	}
 }
