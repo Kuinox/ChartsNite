@@ -9,6 +9,7 @@ namespace Analyser
 	    public KillEntry(string killEntryString)
 	    {
 		    var test = Encoding.ASCII.GetBytes(killEntryString);
+		    var testBytes = BitConverter.ToString(Encoding.ASCII.GetBytes(killEntryString));
 		    Data = killEntryString.Substring(0, 40);
 		    var victimNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(killEntryString.Substring(40, 4)),0);
 		    VictimUserName = killEntryString.Substring(44, victimNameLength);

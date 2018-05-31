@@ -10,11 +10,11 @@ namespace Analyser
     class Entry
     {
 	    readonly TextReader _textToParse;
-	    byte[] _bytes;
+	    string _bytes;
 	    public Entry(TextReader textToParse, byte[] bytes)
 	    {
 		    _textToParse = textToParse;
-		    _bytes = bytes;
+		    _bytes = BitConverter.ToString(bytes);
 	    }
 	    public static async Task<Entry> GetEntry(TextReader textToParse, byte[] bytes)
 	    {
@@ -32,7 +32,16 @@ namespace Analyser
 			    Console.WriteLine("Unsupported entry");
 			    return output;
 		    }
-		    output.UnknowData = await output.ReadAmount(4*3);//3 unknow int
+
+		    output.UnknowData = string.Join(';', new int[]
+		    {
+			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0),
+			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(2)), 0),
+			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(2)), 0),
+			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(2)), 0),
+			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(2)), 0),
+		    }) ;
+			
 		    var entrySize = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
 		    output.KillEntry = new KillEntry(await output.ReadAmount(entrySize));
 
@@ -53,6 +62,8 @@ namespace Analyser
 	    public string Id { get; set; }
 	    public string EntryType { get; set; }
 		public string UnknowData { get; set; }
+
+		//public string UnknowData { get; set; }
 		public KillEntry KillEntry { get; set; }
 
 
