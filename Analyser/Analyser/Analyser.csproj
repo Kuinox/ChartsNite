@@ -7,10 +7,22 @@
 
   <ItemGroup>
     <None Remove="UnsavedReplay-2018.05.27-01.26.52.replay" />
+    <None Remove="UnsavedReplay-2018.06.02-15.14.56.replay" />
+    <None Remove="UnsavedReplay-2018.06.02-17.49.33.replay" />
+    <None Remove="UnsavedReplay-2018.06.02-17.55.42.replay" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="UnsavedReplay-2018.05.27-01.26.52.replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="UnsavedReplay-2018.06.02-15.14.56.replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="UnsavedReplay-2018.06.02-17.49.33.replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="UnsavedReplay-2018.06.02-17.55.42.replay">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

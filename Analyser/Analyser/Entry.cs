@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 
 namespace Analyser
 {
-    class Entry
+    class Entry : DeserializerHelper
     {
-	    readonly TextReader _textToParse;
 	    string _bytes;
-	    public Entry(TextReader textToParse, byte[] bytes)
+	    public Entry(TextReader textToParse, byte[] bytes): base(textToParse)
 	    {
-		    _textToParse = textToParse;
 		    _bytes = BitConverter.ToString(bytes);
 	    }
 	    public static async Task<Entry> GetEntry(TextReader textToParse, byte[] bytes)
@@ -32,8 +30,8 @@ namespace Analyser
 			    Console.WriteLine("Unsupported entry");
 			    return output;
 		    }
-
-		    output.UnknowData = string.Join(';', new int[]
+			var unknowInt = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
+			output.UnknowData = string.Join(';', new int[]
 		    {
 			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0),
 			    BitConverter.ToInt16(Encoding.ASCII.GetBytes(await output.ReadAmount(2)), 0),
@@ -43,6 +41,11 @@ namespace Analyser
 		    }) ;
 			
 		    var entrySize = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
+		    if (entrySize > byte.MaxValue)
+		    {
+				//throw new InvalidDataException();
+			    return null;
+		    }
 		    output.KillEntry = new KillEntry(await output.ReadAmount(entrySize));
 
 		    /*var userNameLength = BitConverter.ToInt32(Encoding.ASCII.GetBytes(await output.ReadAmount(4)), 0);
@@ -52,12 +55,7 @@ namespace Analyser
 		    return output;
 	    }
 
-	    public async Task<string> ReadAmount(int amountToRead)
-	    {
-		    var buffer = new char[amountToRead];
-		    await _textToParse.ReadAsync(buffer, 0, amountToRead);
-		    return new string(buffer);
-	    }
+	    
 
 	    public string Id { get; set; }
 	    public string EntryType { get; set; }
