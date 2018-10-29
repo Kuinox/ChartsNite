@@ -42,3 +42,7 @@ ITest/ITest\.ServerWeb\.Webapp/extract/
 ITest/ITest\.ServerWeb\.Webapp/Content/received/
 
 ITest/ITest\.ServerWeb\.Webapp/Content/
+
+*.replay
+
+Analyzer/replays\.zip

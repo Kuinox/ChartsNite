@@ -1,13 +1,19 @@
 ﻿using ReplayAnalyzer;
+using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
-
 namespace FortniteReplayAnalyzer
 {
-    class FortniteReplayStream : ReplayStream
+    public class FortniteReplayStream : ReplayStream
     {
-        protected FortniteReplayStream(Stream stream) : base(stream)
+        FortniteReplayStream(ReplayStream stream) : base(stream)
         {
+        }
+
+        public static async Task<FortniteReplayStream> FortniteReplayFromStream(Stream stream)
+        {
+            return new FortniteReplayStream(await FromStream(stream));
         }
 
         public override async Task<ChunkInfo> ReadChunk()
@@ -18,8 +24,14 @@ namespace FortniteReplayAnalyzer
                 switch (eventInfo.Group)
                 {
                     case "playerElim":
-                        new KillEventChunk(eventInfo);
-                        break;
+                        uint size = await ReadUInt32();
+                        byte[] unknownData = await ReadBytes(45);
+                        string killed = await ReadString();
+                        string killer = await ReadString();
+                        KillEventChunk.WeaponType weapon = (KillEventChunk.WeaponType) await ReadByteOnce();
+                        KillEventChunk.State victimState = (KillEventChunk.State)await ReadInt32();
+                        
+                        return new KillEventChunk(eventInfo, size, unknownData, killed, killer, weapon, victimState);
                     case "AthenaMatchStats":
                         break;
                     case "AthenaMatchTeamStats":

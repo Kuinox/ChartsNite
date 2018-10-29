@@ -9,13 +9,18 @@ namespace ReplayAnalyzer
     public class ReplayStream : Stream
     {
         readonly Stream _stream;
-        static uint _fileVersion;
 
         const uint FileMagic = 0x1CA2E27F;
 
         protected ReplayStream(Stream stream)
         {
             _stream = stream;
+        }
+
+        protected ReplayStream(ReplayStream stream)
+        {
+            _stream = stream._stream;
+            Info = stream.Info;
         }
 
         public ReplayInfo Info { get; private set; }
@@ -29,7 +34,7 @@ namespace ReplayAnalyzer
                 throw new InvalidDataException("Invalid file. Probably not a replayStream.");
             }
 
-            _fileVersion = await replayStream.ReadUInt32();
+            uint fileVersion = await replayStream.ReadUInt32();
 
             var lengthInMs = await replayStream.ReadInt32();
             var networkVersion = await replayStream.ReadUInt32();
@@ -37,20 +42,20 @@ namespace ReplayAnalyzer
             var friendlyName = await replayStream.ReadString();
             var bIsLive = await replayStream.ReadUInt32() != 0;
             DateTime timestamp = DateTime.MinValue;
-            if (_fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
+            if (fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
             {
                 timestamp = new DateTime(await replayStream.ReadInt64());
             }
 
             bool bCompressed = false;
 
-            if (_fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION)
+            if (fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION)
             {
                 bCompressed = await replayStream.ReadUInt32() != 0;
             }
 
             replayStream.Info = new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
-                bIsLive, bCompressed);
+                bIsLive, bCompressed, fileVersion);
             return replayStream;
         }
 
@@ -106,7 +111,7 @@ namespace ReplayAnalyzer
                         long replaySizeInBytes;
                         uint time1 = uint.MaxValue;
                         uint time2 = uint.MaxValue;
-                        if (_fileVersion >= (uint)VersionHistory.HISTORY_STREAM_CHUNK_TIMES)
+                        if (Info.FileVersion >= (uint)VersionHistory.HISTORY_STREAM_CHUNK_TIMES)
                         {
                             time1 = await ReadUInt32();
                             time2 = await ReadUInt32();
@@ -137,6 +142,8 @@ namespace ReplayAnalyzer
             return buffer;
         }
 
+
+        //public async Task<byte[]> ReadToEnd() => await ReadBytes((int)(_stream.Length - _stream.Position));
         public async Task<byte> ReadByteOnce() => (await ReadBytes(1))[0];
         public async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4));
         public async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4));

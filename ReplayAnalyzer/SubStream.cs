@@ -11,6 +11,7 @@ namespace ReplayAnalyzer
         bool _disposed;
         public SubStream(Stream stream, long length, bool disposeParent = false)
         {
+            if(length> stream.Length) throw new InvalidOperationException();
             _stream = stream;
             _disposeParent = disposeParent;
             Length = length;

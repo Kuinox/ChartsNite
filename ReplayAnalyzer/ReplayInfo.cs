@@ -17,7 +17,9 @@ namespace ReplayAnalyzer
 
         public ChunkInfo HeaderChunk;
 
-        public ReplayInfo(int lengthInMs, uint networkVersion, uint changelist, string friendlyName, DateTime timestamp, long totalDataSizeInBytes, bool bIsLive, bool bCompressed)
+        public readonly uint FileVersion;
+
+        public ReplayInfo(int lengthInMs, uint networkVersion, uint changelist, string friendlyName, DateTime timestamp, long totalDataSizeInBytes, bool bIsLive, bool bCompressed, uint fileVersion)
         {
             LengthInMs = lengthInMs;
             NetworkVersion = networkVersion;
@@ -27,6 +29,7 @@ namespace ReplayAnalyzer
             TotalDataSizeInBytes = totalDataSizeInBytes;
             BIsLive = bIsLive;
             BCompressed = bCompressed;
+            FileVersion = fileVersion;
         }
     }
 }
