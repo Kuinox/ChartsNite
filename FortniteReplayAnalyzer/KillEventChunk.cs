@@ -46,8 +46,11 @@ namespace FortniteReplayAnalyzer
             MiniGun = 12,
             CrossBow = 13,
             Trap = 14,
-            EventuallyDyingFromWound = 15,
-            QuadRocketLauncher = 24,
+            DyingFromWound = 15,
+            VehicleKill = 21,
+            LMG = 22,
+            StinkGrenade = 23,
+            OutOfMap = 24,
             Kevin = 25,
             KevinZombie = 28,
             Suicide = 32
