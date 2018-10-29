@@ -32,22 +32,24 @@ namespace FortniteReplayAnalyzer
 
         public enum WeaponType : byte
         {
-            Storm,
-            Fall,
-            Pistol,
-            Shotgun,
-            AR,
-            SMG,
-            Sniper,
-            PickAxe,
-            Grenade,
+            Storm = 0,
+            Fall = 1,
+            Pistol = 2,
+            Shotgun = 3,
+            AR = 4,
+            SMG = 5,
+            Sniper = 6,
+            PickAxe = 7,
+            Grenade = 8,
             GrenadeLauncher = 10,
             RocketLauncher = 11,
             MiniGun = 12,
-            CrossBow,
-            Trap,
+            CrossBow = 13,
+            Trap = 14,
+            EventuallyDyingFromWound = 15,
             QuadRocketLauncher = 24,
             Kevin = 25,
+            KevinZombie = 28,
             Suicide = 32
         }
     }

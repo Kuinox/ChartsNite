@@ -9,9 +9,9 @@ namespace ReplayAnalyzer
         readonly bool _disposeParent;
         readonly long _startPosition;
         bool _disposed;
-        public SubStream(Stream stream, long length, bool disposeParent = false)
+        public SubStream(Stream stream, long length, bool disposeParent = false) //TODO: No seek, no length
         {
-            if(length> stream.Length) throw new InvalidOperationException();
+            if(length > stream.Length) throw new InvalidOperationException();
             _stream = stream;
             _disposeParent = disposeParent;
             Length = length;
@@ -33,7 +33,7 @@ namespace ReplayAnalyzer
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
-            if( Position+offset < 0 ) throw new InvalidOperationException();
+            if( Position + offset < 0 ) throw new InvalidOperationException();
             int countToRead = count;
             if (count + offset > Length)
             {
