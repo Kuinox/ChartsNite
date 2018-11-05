@@ -21,9 +21,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{37C7884F-D033-444C-B7DE-8C4AA2F79060}"
 	ProjectSection(SolutionItems) = preProject
 		nuget.config = nuget.config
+		Shared.props = Shared.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartsNite.Data.Tests", "Tests\ChartsNite.Data.Tests\ChartsNite.Data.Tests.csproj", "{63CC7ECB-96C8-4798-AB10-08232D9D25A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.Data.Tests", "Tests\ChartsNite.Data.Tests\ChartsNite.Data.Tests.csproj", "{63CC7ECB-96C8-4798-AB10-08232D9D25A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

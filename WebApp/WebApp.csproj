@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <OutputType>Exe</OutputType>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.AspNet" Version="2.1.2" />
@@ -16,6 +17,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0-preview3-35497" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0-preview3-35497" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0-preview3-35497" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ChartsNite.Data\ChartsNite.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

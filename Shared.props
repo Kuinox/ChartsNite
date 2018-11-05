@@ -1,0 +1,15 @@
+<Project>
+  <!-- SharedDir is the /Common directory. -->
+  <PropertyGroup>
+    <SharedDir>$(MSBuildThisFileDirectory)</SharedDir>
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Standard properties. -->
+    <AssemblyOriginatorKeyFile>$(SharedDir)SharedKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>
