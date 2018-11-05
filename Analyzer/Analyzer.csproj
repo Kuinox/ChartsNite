@@ -4,116 +4,16 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Include="*.replay">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="1killBluePistolBasic.replay" />
-    <None Remove="1killBlueRocketLauncher.replay" />
-    <None Remove="2killAKGreen.replay" />
-    <None Remove="firstTop1.replay" />
-    <None Remove="test1.replay" />
-    <None Remove="theo.replay" />
-    <None Remove="UnsavedReplay-2018.10.12-21.59.25.replay" />
-    <None Remove="UnsavedReplay-2018.10.12-22.10.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.12-22.29.37.replay" />
-    <None Remove="UnsavedReplay-2018.10.12-22.41.46.replay" />
-    <None Remove="UnsavedReplay-2018.10.12-22.53.20.replay" />
-    <None Remove="UnsavedReplay-2018.10.13-23.55.10.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.07.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.15.44.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.28.16.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.31.17.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.34.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.37.12.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-00.49.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-01.10.19.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-01.19.10.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-12.56.37.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-12.59.50.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-13.01.59.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-13.08.36.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-15.46.10.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-16.24.06.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-16.39.08.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-16.54.37.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-17.55.33.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-17.57.30.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-17.59.43.replay" />
-    <None Remove="UnsavedReplay-2018.10.14-18.20.04.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-15.50.15.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-15.53.15.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.04.31.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.07.49.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.17.59.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.21.47.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.24.57.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-16.30.19.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-17.45.28.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.03.21.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.20.58.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.38.46.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.52.31.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.57.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-18.59.59.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.04.15.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.25.20.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.36.46.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.38.57.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.44.15.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.49.13.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.53.50.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-19.57.03.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-20.00.28.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-22.12.53.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-22.18.28.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-22.31.47.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-22.46.33.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-22.56.13.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.03.39.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.13.19.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.16.21.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.22.03.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.43.29.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.48.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.18-23.50.47.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-12.21.51.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-12.27.39.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-12.30.16.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-12.33.14.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-16.05.49.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-16.15.00.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-16.27.33.replay" />
-    <None Remove="UnsavedReplay-2018.10.20-17.58.43.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-15.57.09.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.00.32.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.06.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.12.02.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.16.16.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.37.38.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-16.58.11.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.01.33.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.13.00.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.15.27.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.27.02.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.32.17.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-17.44.41.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.05.00.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.11.59.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.37.05.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.46.56.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.52.10.replay" />
-    <None Remove="UnsavedReplay-2018.10.25-18.56.20.replay" />
-    <None Remove="UnsavedReplay-2018.10.28-23.40.06.replay" />
-    <None Remove="UnsavedReplay-2018.10.28-23.44.08.replay" />
-    <None Remove="UnsavedReplay-2018.10.28-23.47.20.replay" />
-    <None Remove="UnsavedReplay-2018.10.28-23.50.48.replay" />
-  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\FortniteReplayAnalyzer\FortniteReplayAnalyzer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Replays/*.replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup>

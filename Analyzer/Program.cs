@@ -16,7 +16,10 @@ namespace Analyzer
             //await ParseReplay(@"UnsavedReplay-2018.10.28-23.50.48.replay");
             //Console.WriteLine(await ReadString());
             // const string saveName =;
-            foreach (string s in Directory.GetFiles(".", "*.replay"))
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            // the code that you want to measure comes here
+            
+            foreach (string s in Directory.GetFiles("Replays\\", "*.replay"))
             {
                 try
                 {
@@ -28,7 +31,9 @@ namespace Analyzer
                 }
 
             }
-            Console.WriteLine("Done.");
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            Console.WriteLine("Done. Elapsed Milliseconds: " + elapsedMs);
             Console.ReadKey();
         }
 

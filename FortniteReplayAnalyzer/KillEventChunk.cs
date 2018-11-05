@@ -49,7 +49,7 @@ namespace FortniteReplayAnalyzer
             DyingFromWound = 15,
             VehicleKill = 21,
             LMG = 22,
-            StinkGrenade = 23,
+            StinkBomb = 23,
             OutOfMap = 24,
             Kevin = 25,
             KevinZombie = 28,

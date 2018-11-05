@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.DB.Actor" Version="3.0.0" />
+    <PackageReference Include="CK.SqlServer.Setup.Model" Version="8.0.0" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="3.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="**/*.sql;**/*.tql;**/*.y4" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Res\sReplayCreate.sql" />
+  </ItemGroup>
+
+</Project>

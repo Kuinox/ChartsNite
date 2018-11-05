@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.StObj.Model" Version="8.0.0" />
+    <PackageReference Include="CK.DB.Actor.Tests" Version="3.0.0" />
+    <PackageReference Include="CK.DB.Tests.NUnit" Version="8.0.0" />
+    <PackageReference Include="CK.DB.User.UserPassword.Tests" Version="3.0.0" />
+    <PackageReference Include="NUnit" Version="3.10.1" />
+    <PackageReference Include="NUnitLite" Version="3.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ChartsNite.Data\ChartsNite.Data.csproj" />
+  </ItemGroup>
+
+</Project>
