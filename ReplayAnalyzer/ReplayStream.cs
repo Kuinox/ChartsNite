@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-
-namespace ReplayAnalyzer
+using ReplayAnalyzer;
+using Common.StreamHelpers;
+namespace UnrealReplayAnalyzer
 {
     public class ReplayStream : Stream
     {
@@ -135,7 +135,7 @@ namespace ReplayAnalyzer
             }
         }
 
-        public async Task<byte[]> ReadBytes(int count)
+        protected async Task<byte[]> ReadBytes(int count)
         {
             byte[] buffer = new byte[count];
             if (await _stream.ReadAsync(buffer, 0, count) != count) throw new InvalidDataException("Did not read the expected number of bytes.");
@@ -144,11 +144,11 @@ namespace ReplayAnalyzer
 
 
         //public async Task<byte[]> ReadToEnd() => await ReadBytes((int)(_stream.Length - _stream.Position));
-        public async Task<byte> ReadByteOnce() => (await ReadBytes(1))[0];
-        public async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4));
-        public async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4));
-        public async Task<long> ReadInt64() => BitConverter.ToInt64(await ReadBytes(8));
-        public async Task<string> ReadString()
+        protected async Task<byte> ReadByteOnce() => (await ReadBytes(1))[0];
+        protected async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4));
+        protected async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4));
+        protected async Task<long> ReadInt64() => BitConverter.ToInt64(await ReadBytes(8));
+        protected async Task<string> ReadString()
         {
             var length = await ReadInt32();
             var isUnicode = length < 0;

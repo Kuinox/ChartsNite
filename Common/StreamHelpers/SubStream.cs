@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
 
-namespace ReplayAnalyzer
+namespace Common.StreamHelpers
 {
-    class SubStream : Stream
+    public class SubStream : Stream
     {
         readonly Stream _stream;
         readonly bool _disposeParent;
         readonly long _startPosition;
+        long _subStreamPosition;
         bool _disposed;
         public SubStream(Stream stream, long length, bool disposeParent = false) //TODO: No seek, no length
         {
@@ -16,13 +17,8 @@ namespace ReplayAnalyzer
             _disposeParent = disposeParent;
             Length = length;
             _startPosition = stream.Position;
+            _subStreamPosition = 0;
         }
-
-        bool IsValidAction(long offset, int count)
-        {
-            return Position + offset > 0 &&
-                Position + offset + count <= Length;
-        }   
 
         public override void Flush()
         {
@@ -39,7 +35,9 @@ namespace ReplayAnalyzer
             {
                 countToRead = (int)(Length - Position);
             }
-            return _stream.Read(buffer, offset, countToRead);
+            int actuallyRead = _stream.Read(buffer, offset, countToRead);
+            _subStreamPosition += actuallyRead;
+            return actuallyRead;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -48,7 +46,7 @@ namespace ReplayAnalyzer
             switch (origin)
             {
                 case SeekOrigin.Current:
-                    if (!IsValidAction(offset, 0)) throw new InvalidOperationException();
+                    if (_subStreamPosition+offset > Length) throw new InvalidOperationException();
                     return _stream.Seek(offset, SeekOrigin.Current);
                 case SeekOrigin.Begin:
                     if(offset<0 || offset > Length) throw new InvalidOperationException();
@@ -69,8 +67,9 @@ namespace ReplayAnalyzer
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
-            if (!IsValidAction(offset, count)) throw new InvalidOperationException();
+            if (_subStreamPosition+count>Length) throw new InvalidOperationException();
             _stream.Write(buffer, offset, count);
+            _subStreamPosition += count;
         }
 
         public override bool CanRead => _stream.CanRead;
@@ -83,7 +82,7 @@ namespace ReplayAnalyzer
 
         public override long Position
         {
-            get => _stream.Position - _startPosition;
+            get => _subStreamPosition;
             set
             {
                 if (_disposed) throw new ObjectDisposedException(GetType().Name);
@@ -93,7 +92,20 @@ namespace ReplayAnalyzer
         protected override void Dispose(bool disposing)
         {
             if (_disposed) return;
-            Seek(Length, SeekOrigin.Begin);
+            if (CanSeek)
+            {
+                Seek(Length, SeekOrigin.Begin);
+            }
+            else if(CanRead)
+            {
+                int toSkip = (int)(Length - _subStreamPosition);
+                Read(new byte[toSkip], 0, toSkip);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+            
             if (_disposeParent) _stream.Dispose();
             _disposed = true;
         }
