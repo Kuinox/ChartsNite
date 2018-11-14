@@ -8,10 +8,6 @@ create type KillListType as table
     KocnedDown bit
 );
 
-create type PlayerListType as table
-(
-    UserName nvarchar(255)
-);
 
 GO
 
@@ -29,7 +25,7 @@ create procedure ChartsNite.sReplayCreate
 )
 as
 begin
-
+    --Retrieving missing user.
     declare user_cursor CURSOR FOR
     select distinct kills.UserName
     from @Kills
@@ -39,15 +35,31 @@ begin
     ) as kills
         left join CK.tUser u
         on kills.UserName = u.UserName
-    where u.UserName is null
+    where u.UserName is null;
 
-    open user_cursor
+    open user_cursor;
     fetch next from user_cursor into @UserName
     begin
         exec sUserCreate @UserName, null
         fetch next from user_cursor into @UserName
     end
-    insert into ChartsNite.tReplay (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
-    values(@OwnerId, @ReplayDate, @UploadDate, @Duration, @CodeName, @FortniteVersion)
-    
+
+    --inserting the replay
+    insert into ChartsNite.tReplay
+        (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
+    values(@OwnerId, @ReplayDate, @UploadDate, @Duration, @CodeName, @FortniteVersion);
+
+    declare @TemptIdTable table
+    (
+        NewEventId bigint
+    );
+    insert into ChartsNite.tEvent
+        (OccuredAt, ReplayId)
+    --Inserting all the events
+    output inserted.EventId
+        into @TemptIdTable
+    select OccuredAt, CAST(scope_identity() AS int)
+    from @Kills;
+
+    insert into ChartsNite.tKill(KillId, KillerId,  );
 end
