@@ -7,8 +7,6 @@ create type KillListType as table
     WeaponType tinyint,
     KocnedDown bit
 );
-
-
 GO
 
 create procedure ChartsNite.sReplayCreate
@@ -16,15 +14,14 @@ create procedure ChartsNite.sReplayCreate
     @ActorId int,
     @OwnerId int,
     @ReplayDate datetime2,
-    @UploadDate datetime2,
     @Duration time(2),
     @CodeName varchar(50),
     @FortniteVersion int,
-    @Kills KillListType readonly,
-    @Players PlayerListType readonly
+    @Kills KillListType readonly
 )
 as
 begin
+    declare @UserName nvarchar(255);
     --Retrieving missing user.
     declare user_cursor CURSOR FOR
     select distinct kills.UserName
@@ -47,7 +44,7 @@ begin
     --inserting the replay
     insert into ChartsNite.tReplay
         (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
-    values(@OwnerId, @ReplayDate, @UploadDate, @Duration, @CodeName, @FortniteVersion);
+    values(@OwnerId, @ReplayDate, GETUTCDATE(), @Duration, @CodeName, @FortniteVersion);
 
     declare @TempIdTable table
     (
@@ -72,6 +69,7 @@ begin
             KnockedDown
         )
     select
+        ROW_NUMBER() over(order by (select null) desc),
         uk.UserId as KillerId,
         uv.UserId as VictimId,
         k.WeaponType,

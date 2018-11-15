@@ -1,4 +1,6 @@
-﻿using CK.Setup;
+﻿using System;
+using CK.Setup;
+using CK.SqlServer;
 using CK.SqlServer.Setup;
 
 namespace ChartsNite.Data
@@ -12,5 +14,9 @@ namespace ChartsNite.Data
         {
 
         }
+
+        [SqlProcedure("sReplayCreate")]
+        public abstract int Create(ISqlCallContext ctx, int actorId, int ownerId, DateTime replayDate,
+            TimeSpan duration, string codeName);
     }
 }
