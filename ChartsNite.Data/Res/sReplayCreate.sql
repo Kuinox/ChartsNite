@@ -17,7 +17,7 @@ create procedure ChartsNite.sReplayCreate
     @OwnerId int,
     @ReplayDate datetime2,
     @UploadDate datetime2,
-    @Duration time(7),
+    @Duration time(2),
     @CodeName varchar(50),
     @FortniteVersion int,
     @Kills KillListType readonly,
@@ -40,7 +40,7 @@ begin
     open user_cursor;
     fetch next from user_cursor into @UserName
     begin
-        exec sUserCreate @UserName, null
+        exec CK.sUserCreate 1, @UserName, null
         fetch next from user_cursor into @UserName
     end
 
@@ -49,17 +49,36 @@ begin
         (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
     values(@OwnerId, @ReplayDate, @UploadDate, @Duration, @CodeName, @FortniteVersion);
 
-    declare @TemptIdTable table
+    declare @TempIdTable table
     (
         NewEventId bigint
     );
+    
     insert into ChartsNite.tEvent
         (OccuredAt, ReplayId)
     --Inserting all the events
     output inserted.EventId
-        into @TemptIdTable
+        into @TempIdTable
     select OccuredAt, CAST(scope_identity() AS int)
     from @Kills;
 
-    insert into ChartsNite.tKill(KillId, KillerId,  );
+    --Inserting all the kills
+    insert into
+        ChartsNite.tKill(
+            KillId,
+            KillerId,
+            VictimId,
+            WeaponType,
+            KnockedDown
+        )
+    select
+        uk.UserId as KillerId,
+        uv.UserId as VictimId,
+        k.WeaponType,
+        k.KocnedDown
+    from @Kills k
+        left join CK.tUser uk
+            on k.KillerUserName = uk.UserName
+        left join CK.tUser uv
+            on k.VictimUserName = uv.UserName;
 end

@@ -1,9 +1,9 @@
 ﻿create table ChartsNite.tReplay (
 	ReplayId int not null identity(0, 1),
 	OwnerId int not null,
-	ReplayDate DateTime2(7) not null,
-	UploadDate DateTime2(7) not null,
-	Duration Time(7) not null,
+	ReplayDate DateTime2(2) not null,
+	UploadDate DateTime2(2) not null,
+	Duration Time(2) not null,
 	CodeName varchar(50) not null,
 	FortniteVersion int not null,
 	constraint PK_ChartsNite_tReplay primary key ( ReplayId ),
