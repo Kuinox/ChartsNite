@@ -5,7 +5,7 @@ create type KillListType as table
     KillerUserName nvarchar(255),
     VictimUserName nvarchar(255),
     WeaponType tinyint,
-    KocnedDown bit
+    KnocnedDown bit
 );
 GO
 
@@ -21,7 +21,11 @@ create procedure ChartsNite.sReplayCreate
 )
 as
 begin
+	--[beginsp]
     declare @UserName nvarchar(255);
+
+	--<PreCreate revert />
+
     --Retrieving missing user.
     declare user_cursor CURSOR FOR
     select distinct kills.UserName
@@ -73,10 +77,12 @@ begin
         uk.UserId as KillerId,
         uv.UserId as VictimId,
         k.WeaponType,
-        k.KocnedDown
+        k.KnocnedDown
     from @Kills k
         left join CK.tUser uk
             on k.KillerUserName = uk.UserName
         left join CK.tUser uv
             on k.VictimUserName = uv.UserName;
+    --<PostCreate />
+    --[endsp]
 end

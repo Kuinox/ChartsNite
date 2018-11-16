@@ -11,8 +11,4 @@
   <ItemGroup>
     <EmbeddedResource Include="**/*.sql;**/*.tql;**/*.y4" />
   </ItemGroup>
-  <ItemGroup>
-    <None Remove="Res\sReplayCreate.sql" />
-  </ItemGroup>
-
 </Project>

@@ -1,10 +1,9 @@
-﻿using System;
+﻿using FortniteReplayAnalyzer;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using FortniteReplayAnalyzer;
-using ReplayAnalyzer;
 
 namespace Analyzer
 {
@@ -18,7 +17,7 @@ namespace Analyzer
             // const string saveName =;
             var watch = System.Diagnostics.Stopwatch.StartNew();
             // the code that you want to measure comes here
-            
+
             foreach (string s in Directory.GetFiles("Replays\\", "*.replay"))
             {
                 try
@@ -39,7 +38,7 @@ namespace Analyzer
 
         static async Task ParseReplay(string saveName)
         {
-            Console.WriteLine("______________________________________"+saveName);
+            Console.WriteLine("______________________________________" + saveName);
             using (var saveFile = File.OpenRead(saveName))
             using (var replayStream = await FortniteReplayStream.FortniteReplayFromStream(saveFile))
             {
@@ -52,13 +51,9 @@ namespace Analyzer
                         if (chunkInfo is KillEventChunk kill)
                         {
 
-                            if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
+                            //if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
                             {
-                                if (!Enum.IsDefined(typeof(KillEventChunk.WeaponType), (byte)kill.Weapon) || mhhh)
-                                {
-                                    mhhh = true;
-                                    Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling + " Killed: " + kill.PlayerKilled +"time: "+ kill.Time1+ "state: "+kill.VictimState);
-                                }
+                                Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling + " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " + kill.VictimState);
                             }
                         }
                     }
