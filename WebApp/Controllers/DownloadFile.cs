@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ChartsNite.Data;
+using CK.Core;
+using CK.SqlServer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Common.StreamHelpers;
@@ -18,6 +20,12 @@ namespace WebApp.Controllers
     [Route("/api/upload")]
     public class DownloadFile : Controller
     {
+        readonly IStObjMap _stObjMap;
+
+        public DownloadFile(IStObjMap stObjMap)
+        {
+            _stObjMap = stObjMap;
+        }
         [HttpPost("replay")]
         public async Task<IActionResult> ReplayUpload(IFileInfo fileInfo)
         {
@@ -39,9 +47,13 @@ namespace WebApp.Controllers
                 }
             }
 
-            kills.Select((chunk => new Kill(TimeSpan.FromMilliseconds(chunk.Time1), chunk.PlayerKilling,
-                chunk.PlayerKilled, (byte) chunk.Weapon, chunk.VictimState == KillEventChunk.State.KnockedDown)));
-            
+            Kill[] killsCasted = kills.Select(chunk => new Kill(TimeSpan.FromMilliseconds(chunk.Time1), chunk.PlayerKilling,
+                chunk.PlayerKilled, (byte) chunk.Weapon, chunk.VictimState == KillEventChunk.State.KnockedDown)).ToArray();
+            ReplayTable u = _stObjMap.StObjs.Obtain<ReplayTable>();
+            using (var ctx = new SqlStandardCallContext())
+            {
+                await u.CreateAsync(ctx, 1, 1, DateTime.UtcNow, TimeSpan.MinValue, "random", 0, killsCasted);
+            }
 
             return Ok();
         }
