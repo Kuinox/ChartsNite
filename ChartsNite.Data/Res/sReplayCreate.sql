@@ -8,7 +8,7 @@ create procedure ChartsNite.sReplayCreate
     @Duration time(2),
     @CodeName varchar(50),
     @FortniteVersion int,
-    @Kills KillListType readonly,
+    @Kills ChartsNite.KillListType readonly,
     @Output int output
 )
 as

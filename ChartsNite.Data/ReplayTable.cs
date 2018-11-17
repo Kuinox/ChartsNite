@@ -11,7 +11,6 @@ namespace ChartsNite.Data
     [SqlTable("tReplay", Package = typeof(Package))]
     [Versions("1.0.0")]
     [SqlObjectItem("transform:CK.sUserDestroy")]
-    [SqlObjectItem("KillListType")]
     [SqlObjectItem("sReplayCreate")]
     public abstract class ReplayTable : SqlTable
     {
