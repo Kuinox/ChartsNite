@@ -46,7 +46,6 @@ namespace Analyzer
                 while (replayStream.Position < replayStream.Length)
                 {
                     using (var chunkInfo = await replayStream.ReadChunk())
-                    using (var reader = new BinaryReader(chunkInfo))
                     {
                         if (chunkInfo is KillEventChunk kill)
                         {

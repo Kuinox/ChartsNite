@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace Common.StreamHelpers
@@ -10,14 +11,13 @@ namespace Common.StreamHelpers
         readonly long _startPosition;
         long _subStreamPosition;
         bool _disposed;
-        public SubStream(Stream stream, long length, bool disposeParent = false) //TODO: No seek, no length
+        public SubStream(Stream stream, long length, bool disposeParent = false)
         {
             if(length > stream.Length) throw new InvalidOperationException();
             _stream = stream;
             _disposeParent = disposeParent;
             Length = length;
             _startPosition = stream.Position;
-            _subStreamPosition = 0;
         }
 
         public override void Flush()
@@ -35,9 +35,9 @@ namespace Common.StreamHelpers
             {
                 countToRead = (int)(Length - Position);
             }
-            int actuallyRead = _stream.Read(buffer, offset, countToRead);
-            _subStreamPosition += actuallyRead;
-            return actuallyRead;
+            int read = _stream.Read(buffer, offset, countToRead);
+            _subStreamPosition += read;
+            return read;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -92,20 +92,22 @@ namespace Common.StreamHelpers
         protected override void Dispose(bool disposing)
         {
             if (_disposed) return;
-            if (CanSeek)
-            {
-                Seek(Length, SeekOrigin.Begin);
-            }
-            else if(CanRead)
+            //if (CanSeek)
+            //{
+            //    Seek(Length, SeekOrigin.Begin);
+            //}
+            //else
+            if (CanRead)
             {
                 int toSkip = (int)(Length - _subStreamPosition);
-                Read(new byte[toSkip], 0, toSkip);
+                var random = new byte[toSkip];
+                int readed = Read(random, 0, random.Length);
             }
             else
             {
                 throw new NotImplementedException();
             }
-            
+            Debug.Assert(Length == Position);
             if (_disposeParent) _stream.Dispose();
             _disposed = true;
         }

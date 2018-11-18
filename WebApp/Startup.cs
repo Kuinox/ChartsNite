@@ -36,11 +36,14 @@ namespace WebApp
             services.AddStObjMap("CK.StObj.AutoAssembly");
             services.AddCors();
             services.AddAmbientValues(_ => { });
+            services.AddMvc();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseRequestMonitor();
+            if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+            app.UseMvcWithDefaultRoute();
         }
     }
 }

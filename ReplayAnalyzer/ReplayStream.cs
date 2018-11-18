@@ -131,7 +131,7 @@ namespace UnrealReplayAnalyzer
                     Console.WriteLine("Unknown chunk ???");
                     return null;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("Invalid ChunkType");
             }
         }
 
@@ -151,6 +151,7 @@ namespace UnrealReplayAnalyzer
         protected async Task<string> ReadString()
         {
             var length = await ReadInt32();
+            if(length > Length-Position) throw new InvalidDataException("String length read was larger than the available stream.");
             var isUnicode = length < 0;
             byte[] data;
             string value;

@@ -18,7 +18,7 @@ using ReplayAnalyzer;
 namespace WebApp.Controllers
 {
     [Produces("application/json")]
-    [Route("api/[controller]")]
+    [Route("upload")]
     public class DownloadFile : Controller
     {
         readonly IStObjMap _stObjMap;
@@ -32,7 +32,7 @@ namespace WebApp.Controllers
         {
             List<KillEventChunk> kills = new List<KillEventChunk>();
             ReplayInfo info;
-            using (Stream replayStream = file.OpenReadStream())//TODO can timeout, BIGINT
+            using (Stream replayStream = file.OpenReadStream())//TODO can timeout, BIGINT, check SQL types.
             using (Stream saveStream = System.IO.File.OpenWrite("save"))
             using (Stream stream = new CopyAsYouReadStream(replayStream, saveStream))
             using (FortniteReplayStream replay = await FortniteReplayStream.FortniteReplayFromStream(stream))
@@ -40,11 +40,14 @@ namespace WebApp.Controllers
                 info = replay.Info;
                 while (replay.Position < replay.Length)
                 {
-                    var chunk = await replay.ReadChunk();
-                    if (chunk is KillEventChunk killEvent)
+                    using (var chunk = await replay.ReadChunk())
                     {
-                        kills.Add(killEvent);
+                        if (chunk is KillEventChunk killEvent)  //TODO: throw if not disposed
+                        {
+                            kills.Add(killEvent);
+                        }
                     }
+                    
                 }
             }
 

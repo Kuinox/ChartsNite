@@ -27,9 +27,11 @@ namespace FortniteReplayAnalyzer
                 {
                     case "playerElim":
                         uint size = await ReadUInt32();
-                        byte[] unknownData = await ReadBytes(45);
+                        byte[] unknownData = await ReadBytes(45);//TODO this data size vary.
                         string killed = await ReadString();
+                        if(!UserNameChecker.CheckUserName(killed)) throw new InvalidDataException("Invalid user name.");
                         string killer = await ReadString();
+                        if (!UserNameChecker.CheckUserName(killer)) throw new InvalidDataException("Invalid user name.");
                         KillEventChunk.WeaponType weapon = (KillEventChunk.WeaponType) await ReadByteOnce();
                         KillEventChunk.State victimState = (KillEventChunk.State)await ReadInt32();
                         
