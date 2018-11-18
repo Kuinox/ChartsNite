@@ -4,9 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.DB.Actor" Version="3.0.0" />
-    <PackageReference Include="CK.SqlServer.Setup.Model" Version="8.0.0" />
-    <PackageReference Include="CK.DB.User.UserPassword" Version="3.0.0" />
+    <PackageReference Include="CK.DB.Actor" Version="3.0.1--0028-develop" />
+    <PackageReference Include="CK.SqlServer.Setup.Model" Version="8.0.1--0046-develop" />
+    <PackageReference Include="CK.DB.User.UserPassword" Version="3.0.1--0028-develop" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="**/*.sql;**/*.tql;**/*.y4" />

@@ -12,12 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Common.StreamHelpers;
 using FortniteReplayAnalyzer;
+using Microsoft.AspNetCore.Http;
 using ReplayAnalyzer;
 
 namespace WebApp.Controllers
 {
     [Produces("application/json")]
-    [Route("/api/upload")]
+    [Route("api/[controller]")]
     public class DownloadFile : Controller
     {
         readonly IStObjMap _stObjMap;
@@ -27,11 +28,11 @@ namespace WebApp.Controllers
             _stObjMap = stObjMap;
         }
         [HttpPost("replay")]
-        public async Task<IActionResult> ReplayUpload(IFileInfo fileInfo)
+        public async Task<IActionResult> ReplayUpload(IFormFile file)
         {
             List<KillEventChunk> kills = new List<KillEventChunk>();
             ReplayInfo info;
-            using (Stream replayStream = fileInfo.CreateReadStream())//TODO can timeout, BIGINT
+            using (Stream replayStream = file.OpenReadStream())//TODO can timeout, BIGINT
             using (Stream saveStream = System.IO.File.OpenWrite("save"))
             using (Stream stream = new CopyAsYouReadStream(replayStream, saveStream))
             using (FortniteReplayStream replay = await FortniteReplayStream.FortniteReplayFromStream(stream))
