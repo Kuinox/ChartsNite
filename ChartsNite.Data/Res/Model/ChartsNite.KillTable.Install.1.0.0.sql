@@ -1,5 +1,5 @@
 ﻿create table ChartsNite.tKill (
-	KillId bigint not null identity(0, 1),
+	KillId bigint not null,
 	KillerId int not null,
 	VictimId int not null,
 	WeaponType tinyint not null,

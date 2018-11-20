@@ -22,7 +22,7 @@ namespace ChartsNite.Data
         public async Task<int> CreateAsync(ISqlCallContext ctx, int actorId, int ownerId, DateTime replayDate,
             TimeSpan duration, string codeName, int version, Kill[] kills)
         {
-            using (SqlCommand sqlCommand = new SqlCommand("sReplayCreate"))
+            using (SqlCommand sqlCommand = new SqlCommand("ChartsNite.sReplayCreate"))
             {
                 sqlCommand.CommandType = CommandType.StoredProcedure;
                 sqlCommand.Parameters.Add("@ActorId", SqlDbType.Int).Value = actorId;
@@ -80,6 +80,7 @@ namespace ChartsNite.Data
                     killTable.Rows.Add(row);
                 }
                 sqlCommand.Parameters.Add("@Kills", SqlDbType.Structured).Value = killTable;
+                sqlCommand.Parameters.Add("@Output", SqlDbType.Int).Direction = ParameterDirection.Output;
                 sqlCommand.Prepare();
                 SqlDataReader reader = await ctx[Database].ExecuteQueryAsync(sqlCommand, async (command, token) => await command.ExecuteReaderAsync(token) );
                 return reader.GetInt32(0);

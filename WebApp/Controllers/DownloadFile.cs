@@ -56,9 +56,8 @@ namespace WebApp.Controllers
             ReplayTable u = _stObjMap.StObjs.Obtain<ReplayTable>();
             using (var ctx = new SqlStandardCallContext())
             {
-                await u.CreateAsync(ctx, 1, 1, DateTime.UtcNow, TimeSpan.MinValue, "random", 0, killsCasted);
+                await u.CreateAsync(ctx, 1, 1, DateTime.UtcNow, TimeSpan.FromMilliseconds(info.LengthInMs), "random", 0, killsCasted);
             }
-
             return Ok();
         }
     }

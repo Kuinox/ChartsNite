@@ -1,6 +1,4 @@
-﻿-- SetupConfig: {}
-
-create procedure ChartsNite.sReplayCreate
+﻿create procedure ChartsNite.sReplayCreate
     (
     @ActorId int,
     @OwnerId int,
@@ -20,21 +18,21 @@ begin
         NewEventId bigint
     );
     --<PreCreate revert />
-
+	begin tran
     --Retrieving missing user.
-    declare user_cursor CURSOR FOR
-    select distinct kills.UserName
-    from @Kills
-    unpivot
-    (
-        t for UserName IN (KillerUserName, VictimUserName)
-    ) as kills
-        left join CK.tUser u
-        on kills.UserName = u.UserName collate Latin1_General_100_CI_AS
+    declare user_cursor cursor for
+	select k.UserNameToAdd from(
+    select distinct KillerUserName as UserNameToAdd from @Kills
+    union
+    select distinct VictimUserName from @Kills) k
+    left join CK.tUser u
+    on k.UserNameToAdd = u.UserName collate Latin1_General_100_CI_AS
     where u.UserName is null;
+    --union
 
     open user_cursor;
     fetch next from user_cursor into @UserName
+	WHILE @@FETCH_STATUS = 0 
     begin
         exec CK.sUserCreate 1, @UserName, null
         fetch next from user_cursor into @UserName
@@ -45,7 +43,7 @@ begin
         (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
     values(@OwnerId, @ReplayDate, GETUTCDATE(), @Duration, @CodeName, @FortniteVersion);
     set @Output = SCOPE_IDENTITY();
-    
+
     insert into ChartsNite.tEvent
         (OccuredAt, ReplayId)
     --Inserting all the events
@@ -85,6 +83,7 @@ begin
         on k.KillerUserName = uk.UserName collate Latin1_General_100_CI_AS
         left join CK.tUser uv
         on k.VictimUserName = uv.UserName collate Latin1_General_100_CI_AS;
+	commit tran
 --<PostCreate />
 --[endsp]
 end
