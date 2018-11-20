@@ -28,7 +28,7 @@ namespace ReplayAnalyzer
             SizeInBytes = info.SizeInBytes;
             TypeOffset = info.TypeOffset;
             DataOffset = info.DataOffset;
-            Stream = new SubStream(info.Stream, info.Stream.Length-info.Stream.Position);
+            Stream = new SubStream(info.Stream, info.Stream.Length-info.Stream.Position, true);
         }
 
         public override void Flush() => Stream.Flush();

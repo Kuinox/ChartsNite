@@ -39,21 +39,17 @@ namespace Analyzer
         static async Task ParseReplay(string saveName)
         {
             Console.WriteLine("______________________________________" + saveName);
-            using (var saveFile = File.OpenRead(saveName))
+            using (FileStream saveFile = File.OpenRead(saveName))
             using (var replayStream = await FortniteReplayStream.FortniteReplayFromStream(saveFile))
             {
-                bool mhhh = false;
                 while (replayStream.Position < replayStream.Length)
                 {
                     using (var chunkInfo = await replayStream.ReadChunk())
                     {
-                        if (chunkInfo is KillEventChunk kill)
+                        if (!(chunkInfo is KillEventChunk kill)) continue;
+                        //if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
                         {
-
-                            //if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
-                            {
-                                Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling + " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " + kill.VictimState);
-                            }
+                            Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling + " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " + kill.VictimState);
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using ReplayAnalyzer;
 using Common.StreamHelpers;
@@ -66,7 +67,7 @@ namespace UnrealReplayAnalyzer
             int sizeInBytes = await ReadInt32();
 
             long dataOffset = Position;
-            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, typeOffset, dataOffset, new SubStream(this, sizeInBytes));
+            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, typeOffset, dataOffset, new SubStream(this, sizeInBytes, true));
             if (chunk.SizeInBytes < 0 || chunk.DataOffset + chunk.SizeInBytes > Length)
             {
                 throw new InvalidDataException("Invalid chunk data.");
@@ -135,24 +136,31 @@ namespace UnrealReplayAnalyzer
             }
         }
 
-        protected async Task<byte[]> ReadBytes(int count)
+        protected Task<byte[]> ReadBytes(int count)
         {
             byte[] buffer = new byte[count];
-            if (await _stream.ReadAsync(buffer, 0, count) != count) throw new InvalidDataException("Did not read the expected number of bytes.");
-            return buffer;
+            int toRead = count;
+            while (toRead > 0)
+            {
+                int read = _stream.Read(buffer, count - toRead, count);
+                if (read == 0)
+                {
+                    throw new InvalidDataException("Did not read the expected number of bytes.");
+                }
+                toRead -= read;
+            }
+            return Task.FromResult(buffer);
         }
 
-
-        //public async Task<byte[]> ReadToEnd() => await ReadBytes((int)(_stream.Length - _stream.Position));
         protected async Task<byte> ReadByteOnce() => (await ReadBytes(1))[0];
         protected async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4));
         protected async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4));
         protected async Task<long> ReadInt64() => BitConverter.ToInt64(await ReadBytes(8));
         protected async Task<string> ReadString()
         {
-            var length = await ReadInt32();
+            int length = await ReadInt32();
             if(length > Length-Position) throw new InvalidDataException("String length read was larger than the available stream.");
-            var isUnicode = length < 0;
+            bool isUnicode = length < 0;
             byte[] data;
             string value;
 
