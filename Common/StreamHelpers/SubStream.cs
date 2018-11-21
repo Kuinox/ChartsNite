@@ -11,50 +11,78 @@ namespace Common.StreamHelpers
         readonly long _startPosition;
         readonly long _maxPosition;
         bool _disposed;
+        readonly bool _isLengthAvailable;
+        readonly bool _isPositionAvailable;
+        long _relativePosition;
         public SubStream(Stream stream, long length, bool leaveOpen = false)
         {
             try
             {
-                if (length > stream.Length) throw new InvalidOperationException();
+                long temp = stream.Length;
+                _isLengthAvailable = true;
             }
-            catch (NotSupportedException e)
+            catch (NotSupportedException)
             {
-                //What should i do ?
+                _isLengthAvailable = false;
+            }
+            if (_isLengthAvailable && length > stream.Length) throw new InvalidOperationException();
+            try
+            {
+                long temp = stream.Position;
+                _isPositionAvailable = true;
+            }
+            catch (NotSupportedException)
+            {
+                _isPositionAvailable = false;
             }
             _stream = stream;
             _leaveOpen = leaveOpen;
             Length = length;
+            if (!_isPositionAvailable) return;
             _startPosition = stream.Position;
             _maxPosition = _startPosition + length;
+            CheckPositionUpperStream();
         }
 
         public override void Flush()
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            CheckPositionUpperStream();
             _stream.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            CheckPositionUpperStream();
             if (Position + count > Length) throw new InvalidOperationException();
-            return _stream.Read(buffer, offset, count);
+            int read = _stream.Read(buffer, offset, count);
+            _relativePosition += read;
+            return read;
         }
 
         public override long Seek(long offset, SeekOrigin origin)//TODO change seek long returned based on substream
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            CheckPositionUpperStream();
+            long pos;
             switch (origin)
             {
                 case SeekOrigin.Current:
                     if (offset + Position > Length || offset + Position < 0) throw new InvalidOperationException();
-                    return _stream.Seek(offset, SeekOrigin.Current);
+                    pos = _stream.Seek(offset, SeekOrigin.Current);
+                    _relativePosition = pos - _startPosition;
+                    return _relativePosition;
                 case SeekOrigin.Begin:
                     if (offset < 0 || offset > Length) throw new InvalidOperationException();
-                    return _stream.Seek(_startPosition + offset, SeekOrigin.Begin);
+                    pos = _stream.Seek(_startPosition + offset, SeekOrigin.Begin);
+                    _relativePosition = pos - _startPosition;
+                    return _relativePosition;
                 case SeekOrigin.End:
                     if (Length + offset < 0 || Length + offset > Length) throw new InvalidOperationException();
-                    return _stream.Seek(_maxPosition + offset, SeekOrigin.Begin);
+                    pos = _stream.Seek(_maxPosition + offset, SeekOrigin.Begin);
+                    _relativePosition = pos - _startPosition;
+                    return _relativePosition;
                 default:
                     throw new NotSupportedException();
             }
@@ -68,8 +96,9 @@ namespace Common.StreamHelpers
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
-            if (Position + count > Length) throw new InvalidOperationException();
+            if (_isPositionAvailable && Position + count > Length) throw new InvalidOperationException();
             _stream.Write(buffer, offset, count);
+            _relativePosition += count;
         }
 
         public override bool CanRead => _stream.CanRead;
@@ -80,42 +109,50 @@ namespace Common.StreamHelpers
 
         public override long Length { get; }
 
+        void CheckPositionUpperStream()
+        {
+            if(_isPositionAvailable && _startPosition+_relativePosition != _stream.Position) throw new InvalidOperationException("Upper stream Position changed");
+        }
+
         public override long Position
         {
             get
             {
                 if (_disposed) throw new ObjectDisposedException(GetType().Name);
-                return _stream.Position - _startPosition;
+                CheckPositionUpperStream();
+                return _relativePosition;
             }
             set
             {
                 if (_disposed) throw new ObjectDisposedException(GetType().Name);
+                CheckPositionUpperStream();
                 _stream.Position = value + _startPosition;
             }
         }
         protected override void Dispose(bool disposing)
         {
             if (_disposed) return;
+            CheckPositionUpperStream();
             if (CanSeek)
             {
-                long posBefore = _stream.Position;
-                long pos = Seek(Length, SeekOrigin.Begin);
-                Console.WriteLine("Seek of" + (_stream.Position - posBefore) + " Length " + Length + "seekPos: " + pos);
+                Seek(Length, SeekOrigin.Begin);
             }
-            else if (CanRead)
+            else
+            if (CanRead)
             {
                 int toSkip = (int)(Length - Position);
                 while (toSkip != 0)
                 {
                     int read = Read(new byte[toSkip], 0, toSkip);
                     toSkip -= read;
-                    if(read == 0) throw new InvalidDataException("End of stream when i should have skipped data.");
+                    if (read == 0) throw new InvalidDataException("End of stream when i should have skipped data.");
                 }
             }
             else
             {
                 throw new NotImplementedException();
             }
+            Console.WriteLine("POST relativePos "+_relativePosition+ " startPosition " + _startPosition + " subStreamPos "+_stream.Position);
             Debug.Assert(Length == Position);
             if (!_leaveOpen) _stream.Dispose();
             _disposed = true;

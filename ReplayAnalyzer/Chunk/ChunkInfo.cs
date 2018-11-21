@@ -10,15 +10,11 @@ namespace ReplayAnalyzer
     {
         public ChunkType Type { get; }
         public readonly int SizeInBytes;
-        public readonly long TypeOffset;
-        public readonly long DataOffset;
         protected Stream Stream;
-        public ChunkInfo(ChunkType chunkType, int sizeInBytes, long typeOffset, long dataOffset, Stream stream)
+        public ChunkInfo(ChunkType chunkType, int sizeInBytes, Stream stream)
         {
             Type = chunkType;
             SizeInBytes = sizeInBytes;
-            TypeOffset = typeOffset;
-            DataOffset = dataOffset;
             Stream = stream;
         }
 
@@ -26,8 +22,6 @@ namespace ReplayAnalyzer
         {
             Type = info.Type;
             SizeInBytes = info.SizeInBytes;
-            TypeOffset = info.TypeOffset;
-            DataOffset = info.DataOffset;
             Stream = new SubStream(info.Stream, info.Stream.Length-info.Stream.Position, true);
         }
 

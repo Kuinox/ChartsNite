@@ -1,10 +1,10 @@
-﻿using System;
+﻿using CK.Setup;
+using CK.SqlServer;
+using CK.SqlServer.Setup;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
-using CK.Setup;
-using CK.SqlServer;
-using CK.SqlServer.Setup;
 
 namespace ChartsNite.Data
 {
@@ -82,8 +82,12 @@ namespace ChartsNite.Data
                 sqlCommand.Parameters.Add("@Kills", SqlDbType.Structured).Value = killTable;
                 sqlCommand.Parameters.Add("@Output", SqlDbType.Int).Direction = ParameterDirection.Output;
                 sqlCommand.Prepare();
-                SqlDataReader reader = await ctx[Database].ExecuteQueryAsync(sqlCommand, async (command, token) => await command.ExecuteReaderAsync(token) );
-                return reader.GetInt32(0);
+                int reader = await ctx[Database].ExecuteQueryAsync(sqlCommand, async (command, token) =>
+                {
+                    var test = await command.ExecuteReaderAsync(token);
+                    return test.GetInt32(0);
+                });
+                return reader;
             }
         }
     }

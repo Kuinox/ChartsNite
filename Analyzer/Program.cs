@@ -1,4 +1,5 @@
 ﻿using FortniteReplayAnalyzer;
+using ReplayAnalyzer;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,17 +43,20 @@ namespace Analyzer
             using (FileStream saveFile = File.OpenRead(saveName))
             using (var replayStream = await FortniteReplayStream.FortniteReplayFromStream(saveFile))
             {
-                while (replayStream.Position < replayStream.Length)
+                ChunkInfo chunkInfo;
+                do
                 {
-                    using (var chunkInfo = await replayStream.ReadChunk())
+                    using (chunkInfo = await replayStream.ReadChunk())
                     {
                         if (!(chunkInfo is KillEventChunk kill)) continue;
                         //if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
                         {
-                            Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling + " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " + kill.VictimState);
+                            Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling +
+                                              " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " +
+                                              kill.VictimState);
                         }
                     }
-                }
+                } while (chunkInfo != null);
             }
         }
 

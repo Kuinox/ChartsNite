@@ -1,21 +1,29 @@
-﻿using System;
+﻿using Common.StreamHelpers;
+using ReplayAnalyzer;
+using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using ReplayAnalyzer;
-using Common.StreamHelpers;
 namespace UnrealReplayAnalyzer
 {
     public class ReplayStream : Stream
     {
         readonly Stream _stream;
-
+        bool _isLengthAvailable;
         const uint FileMagic = 0x1CA2E27F;
 
         protected ReplayStream(Stream stream)
         {
             _stream = stream;
+            try
+            {
+                long length = stream.Length;
+                _isLengthAvailable = true;
+            }
+            catch (NotSupportedException)
+            {
+                _isLengthAvailable = false;
+            }
         }
 
         protected ReplayStream(ReplayStream stream)
@@ -29,7 +37,6 @@ namespace UnrealReplayAnalyzer
         public static async Task<ReplayStream> FromStream(Stream stream)
         {
             ReplayStream replayStream = new ReplayStream(stream);
-            long totalSize = stream.Length;
             if (FileMagic != await replayStream.ReadUInt32())
             {
                 throw new InvalidDataException("Invalid file. Probably not a replayStream.");
@@ -62,15 +69,26 @@ namespace UnrealReplayAnalyzer
 
         public virtual async Task<ChunkInfo> ReadChunk()
         {
-            long typeOffset = Position;
-            ChunkType chunkType = (ChunkType)await ReadUInt32();
+            ChunkType chunkType;
+            try
+            {
+                chunkType = (ChunkType) await ReadUInt32();
+            }
+            catch (EndOfStreamException)
+            {
+                return null;
+            }
             int sizeInBytes = await ReadInt32();
 
-            long dataOffset = Position;
-            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, typeOffset, dataOffset, new SubStream(this, sizeInBytes, true));
-            if (chunk.SizeInBytes < 0 || chunk.DataOffset + chunk.SizeInBytes > Length)
+            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, new SubStream(this, sizeInBytes, true));
+            if (chunk.SizeInBytes < 0)
             {
                 throw new InvalidDataException("Invalid chunk data.");
+            }
+
+            if (_isLengthAvailable && Length < sizeInBytes)
+            {
+                throw new EndOfStreamException("Need more bytes that what is available.");
             }
 
             switch (chunkType)
@@ -95,7 +113,7 @@ namespace UnrealReplayAnalyzer
                         uint time1 = await ReadUInt32();
                         uint time2 = await ReadUInt32();
                         long eventDataOffset = Position;
-                        EventInfo eventInfo = new EventInfo(chunk ,- 1, id, group, metadata, time1, time2, sizeInBytes,
+                        EventInfo eventInfo = new EventInfo(chunk, -1, id, group, metadata, time1, time2, sizeInBytes,
                             eventDataOffset);
                         if (eventInfo.EventSizeInBytes < 0 ||
                             eventInfo.EventDataOffset + eventInfo.EventSizeInBytes > Length)
@@ -132,6 +150,7 @@ namespace UnrealReplayAnalyzer
                     Console.WriteLine("Unknown chunk ???");
                     return null;
                 default:
+                    Console.WriteLine("POSITION: "+_stream.Position);
                     throw new ArgumentOutOfRangeException("Invalid ChunkType");
             }
         }
@@ -145,7 +164,7 @@ namespace UnrealReplayAnalyzer
                 int read = _stream.Read(buffer, count - toRead, count);
                 if (read == 0)
                 {
-                    throw new InvalidDataException("Did not read the expected number of bytes.");
+                    throw new EndOfStreamException("Did not read the expected number of bytes.");
                 }
                 toRead -= read;
             }
@@ -159,7 +178,7 @@ namespace UnrealReplayAnalyzer
         protected async Task<string> ReadString()
         {
             int length = await ReadInt32();
-            if(length > Length-Position) throw new InvalidDataException("String length read was larger than the available stream.");
+            if (_isLengthAvailable && length > Length - Position) throw new InvalidDataException("String length read was larger than the available stream.");
             bool isUnicode = length < 0;
             byte[] data;
             string value;
@@ -200,11 +219,6 @@ namespace UnrealReplayAnalyzer
         {
             get => _stream.Position;
             set => _stream.Position = value;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
         }
     }
 }
