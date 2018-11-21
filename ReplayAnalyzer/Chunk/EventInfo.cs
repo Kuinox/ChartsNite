@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using UnrealReplayAnalyzer;
 
 namespace ReplayAnalyzer
 {
@@ -14,11 +15,10 @@ namespace ReplayAnalyzer
         public readonly uint Time1;
         public readonly uint Time2;
         public readonly int EventSizeInBytes;
-        public readonly long EventDataOffset;
 
-        public EventInfo(ChunkInfo info, int chunkIndex, string id, string group, string metadata, uint time1, uint time2, int eventSizeInBytes, long eventDataOffset) : base(info)
+        public EventInfo(ChunkInfo info, int chunkIndex, string id, string group, string metadata, uint time1, uint time2, int eventSizeInBytes) : base(info)
         {
-            if(info.Type != ChunkType.Event && info.Type != ChunkType.Checkpoint) throw new InvalidDataException();
+            if(info.Type != (int)ChunkType.Event && info.Type != (int)ChunkType.Checkpoint) throw new InvalidOperationException();
             ChunkIndex = chunkIndex;
             Id = id;
             Group = group;
@@ -26,9 +26,9 @@ namespace ReplayAnalyzer
             Time1 = time1;
             Time2 = time2;
             EventSizeInBytes = eventSizeInBytes;
-            EventDataOffset = eventDataOffset;
         }
-        public EventInfo(EventInfo info) : base(info)
+
+        protected EventInfo(EventInfo info) : base(info)
         {
             ChunkIndex = info.ChunkIndex;
             Id = info.Id;
@@ -37,7 +37,6 @@ namespace ReplayAnalyzer
             Time1 = info.Time1;
             Time2 = info.Time2;
             EventSizeInBytes = info.EventSizeInBytes;
-            EventDataOffset = info.EventDataOffset;
         }
     }
 }

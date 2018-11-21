@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace UnrealReplayAnalyzer
 {
-    public class ChunkReader
+    public class ChunkReader : IDisposable
     {
         const uint FileMagic = 0x1CA2E27F;
         readonly Stream _stream;
-        protected bool StreamLengthAvailable;
+        readonly bool _streamLengthAvailable;//TODO Use this
         protected ChunkReader(ReplayInfo info, Stream stream)
         {
             Info = info;
@@ -18,12 +18,19 @@ namespace UnrealReplayAnalyzer
             try
             {
                 long length = _stream.Length;
-                StreamLengthAvailable = true;
+                _streamLengthAvailable = true;
             }
             catch (NotSupportedException)
             {
-                StreamLengthAvailable = false;
+                _streamLengthAvailable = false;
             }
+        }
+
+        protected ChunkReader(ChunkReader reader)
+        {
+            Info = reader.Info;
+            _stream = reader._stream;
+            _streamLengthAvailable = reader._streamLengthAvailable;
         }
 
         public ReplayInfo Info { get; }
@@ -70,11 +77,16 @@ namespace UnrealReplayAnalyzer
             {
                 throw new InvalidDataException("Invalid chunk data.");
             }
-            if (StreamLengthAvailable && _stream.Length < sizeInBytes)
+            if (_streamLengthAvailable && _stream.Length < sizeInBytes)
             {
                 throw new EndOfStreamException("Need more bytes that what is available.");
             }
             return new ChunkInfo(chunkType, sizeInBytes, new SubStream(_stream, sizeInBytes, true));
+        }
+
+        public void Dispose()
+        {
+            _stream?.Dispose();
         }
     }
 }

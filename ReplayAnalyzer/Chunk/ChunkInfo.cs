@@ -6,19 +6,19 @@ using Common.StreamHelpers;
 
 namespace ReplayAnalyzer
 {
-    public class ChunkInfo
+    public class ChunkInfo : IDisposable
     {
         public readonly uint Type;
         public readonly int SizeInBytes;
-        public Stream Stream;
-        public ChunkInfo(uint chunkType, int sizeInBytes, Stream stream)
+        public readonly Stream Stream;
+        public ChunkInfo(uint chunkType, int sizeInBytes, SubStream stream)
         {
             Type = chunkType;
             SizeInBytes = sizeInBytes;
             Stream = stream;
         }
 
-        public ChunkInfo(ChunkInfo info)
+        protected ChunkInfo(ChunkInfo info)
         {
             Type = info.Type;
             SizeInBytes = info.SizeInBytes;
@@ -28,6 +28,11 @@ namespace ReplayAnalyzer
         protected void Dispose(bool disposing)
         {
            Stream.Dispose();
+        }
+
+        public void Dispose()
+        {
+            Stream?.Dispose();
         }
     }
 }

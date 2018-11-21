@@ -152,7 +152,6 @@ namespace Common.StreamHelpers
             {
                 throw new NotImplementedException();
             }
-            Console.WriteLine("POST relativePos "+_relativePosition+ " startPosition " + _startPosition + " subStreamPos "+_stream.Position);
             Debug.Assert(Length == Position);
             if (!_leaveOpen) _stream.Dispose();
             _disposed = true;

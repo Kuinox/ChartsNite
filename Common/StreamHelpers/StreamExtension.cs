@@ -9,20 +9,20 @@ namespace Common.StreamHelpers
     public static class StreamExtension
     {
 
-        static Task<byte[]> ReadBytes(this Stream stream, int count)
+        public static async Task<byte[]> ReadBytes(this Stream stream, int count)
         {
             byte[] buffer = new byte[count];
             int toRead = count;
             while (toRead > 0)
             {
-                int read = stream.Read(buffer, count - toRead, count);
+                int read = await stream.ReadAsync(buffer, count - toRead, count);//TODO AWAIT
                 if (read == 0)
                 {
                     throw new EndOfStreamException("Did not read the expected number of bytes.");
                 }
                 toRead -= read;
             }
-            return Task.FromResult(buffer);
+            return buffer;
         }
         public static async Task<byte> ReadByteOnce( this Stream stream) => (await stream.ReadBytes(1))[0];
         public static async Task<uint> ReadUInt32( this Stream stream) => BitConverter.ToUInt32(await stream.ReadBytes(4), 0);
