@@ -41,7 +41,7 @@ namespace Analyzer
         {
             Console.WriteLine("______________________________________" + saveName);
             using (FileStream saveFile = File.OpenRead(saveName))
-            using (var replayStream = await FortniteReplayStream.FortniteReplayFromStream(saveFile))
+            using (var replayStream = await FortniteReplayReader.FortniteReplayFromStream(saveFile))
             {
                 ChunkInfo chunkInfo;
                 do

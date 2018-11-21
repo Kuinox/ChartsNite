@@ -7,15 +7,15 @@ using UnrealReplayAnalyzer;
 
 namespace FortniteReplayAnalyzer
 {
-    public class FortniteReplayStream : ReplayStream
+    public class FortniteReplayReader : ReplayReader
     {
-        FortniteReplayStream(ReplayStream stream) : base(stream)
+        FortniteReplayReader(ReplayReader stream) : base(stream)
         {
         }
 
-        public static async Task<FortniteReplayStream> FortniteReplayFromStream(Stream stream)
+        public static async Task<FortniteReplayReader> FortniteReplayFromStream(Stream stream)
         {
-            return new FortniteReplayStream(await FromStream(stream));
+            return new FortniteReplayReader(await FromStream(stream));
         }
 
         public override async Task<ChunkInfo> ReadChunk()
