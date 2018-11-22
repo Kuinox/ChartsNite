@@ -43,6 +43,20 @@ namespace Common.StreamHelpers
             }
             else
             {
+                if (length > 258)
+                {
+                    string dump;
+                    if (stream.Length > length)
+                    {
+                        dump = Encoding.ASCII.GetString(await stream.ReadBytes(length));
+                        
+                    }
+                    else
+                    {
+                        dump = Encoding.ASCII.GetString(await stream.ReadBytes((int)(stream.Length - stream.Position)));
+                    }
+                    throw new InvalidDataException("string length too high, Stream DUMP: "+ dump);
+                }
                 data = await stream.ReadBytes(length);
                 value = Encoding.Default.GetString(data);
             }

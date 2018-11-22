@@ -2,6 +2,7 @@
 using ReplayAnalyzer;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace UnrealReplayAnalyzer
@@ -35,6 +36,10 @@ namespace UnrealReplayAnalyzer
                 case ChunkType.Header:
                     if (Info.HeaderChunk == null)
                     {
+                        //var test = await chunk.Stream.ReadInt32();
+                        byte[] bytes = await chunk.Stream.ReadBytes(chunk.SizeInBytes);
+                        Console.WriteLine(Encoding.ASCII.GetString(bytes));
+                        Console.WriteLine(BitConverter.ToString(bytes));
                         Info.HeaderChunk = chunk;
                     }
                     else

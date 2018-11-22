@@ -46,9 +46,9 @@ namespace Analyzer
                         if (!(chunkInfo is KillEventChunk kill)) continue;
                         //if (kill.PlayerKilling == "Kuinox_" || kill.PlayerKilled == "Kuinox_" || kill.PlayerKilled == "DexterNeo" || kill.PlayerKilling == "DexterNeo")
                         {
-                            Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling +
-                                              " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " +
-                                              kill.VictimState);
+                            //Console.WriteLine(kill.Weapon + " " + kill.VictimState + " Killer: " + kill.PlayerKilling +
+                            //                  " Killed: " + kill.PlayerKilled + "time: " + kill.Time1 + "state: " +
+                            //                  kill.VictimState);
                         }
                     }
                 } while (chunkInfo != null);

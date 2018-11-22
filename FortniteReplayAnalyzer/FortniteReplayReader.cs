@@ -29,15 +29,25 @@ namespace FortniteReplayAnalyzer
                     switch (eventInfo.Group)
                     {
                         case "playerElim":
-
-                            byte[] unknownData = await chunk.Stream.ReadBytes(45);
-                            string killed = await chunk.Stream.ReadString();
-                            if (!UserNameChecker.CheckUserName(killed)) throw new InvalidDataException("Invalid user name.");
-                            string killer = await chunk.Stream.ReadString();
-                            if (!UserNameChecker.CheckUserName(killer)) throw new InvalidDataException("Invalid user name.");
-                            KillEventChunk.WeaponType weapon = (KillEventChunk.WeaponType)await chunk.Stream.ReadByteOnce();
-                            KillEventChunk.State victimState = (KillEventChunk.State)await chunk.Stream.ReadInt32();
-                            return new KillEventChunk(eventInfo, unknownData, killed, killer, weapon, victimState);
+                            using (StreamWriter writer = File.AppendText("dump"))
+                            {
+                                //await writer.WriteLineAsync(BitConverter.ToString(await eventInfo.Stream.ReadBytes(eventInfo.EventSizeInBytes)));
+                            }
+                            return chunk;
+                            //if (eventInfo.EventSizeInBytes < 45)
+                            //{
+                            //    byte[] bytes = await eventInfo.Stream.ReadBytes(eventInfo.EventSizeInBytes);
+                            //    Console.WriteLine("WEIRD UNKNOWN DATA:" +BitConverter.ToString(bytes) +"  " + Encoding.ASCII.GetString(bytes));
+                            //    return chunk;
+                            //}
+                            //byte[] unknownData = await chunk.Stream.ReadBytes(45);
+                            //string killed = await chunk.Stream.ReadString();
+                            //if (!UserNameChecker.CheckUserName(killed)) throw new InvalidDataException("Invalid user name.");
+                            //string killer = await chunk.Stream.ReadString();
+                            //if (!UserNameChecker.CheckUserName(killer)) throw new InvalidDataException("Invalid user name.");
+                            //KillEventChunk.WeaponType weapon = (KillEventChunk.WeaponType)await chunk.Stream.ReadByteOnce();
+                            //KillEventChunk.State victimState = (KillEventChunk.State)await chunk.Stream.ReadInt32();
+                            //return new KillEventChunk(eventInfo, unknownData, killed, killer, weapon, victimState);
                         case "AthenaMatchStats":
                             return chunk;
                         case "AthenaMatchTeamStats":
@@ -45,7 +55,7 @@ namespace FortniteReplayAnalyzer
                         case "checkpoint":
                             return chunk;
                         default:
-                            Console.WriteLine("UNKNOWN CASE" + eventInfo.Group);
+                            //Console.WriteLine("UNKNOWN CASE" + eventInfo.Group); //TODO
                             return chunk;
                     }
                 default:
