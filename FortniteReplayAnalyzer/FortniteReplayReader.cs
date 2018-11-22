@@ -29,8 +29,10 @@ namespace FortniteReplayAnalyzer
                     switch (eventInfo.Group)
                     {
                         case "playerElim":
+
+                            byte[] unknownData = await chunk.Stream.ReadBytes(45);
+
                             uint size = await chunk.Stream.ReadUInt32();
-                            byte[] unknownData = await chunk.Stream.ReadBytes(45);//TODO this data size vary.
                             string killed = await chunk.Stream.ReadString();
                             if (!UserNameChecker.CheckUserName(killed)) throw new InvalidDataException("Invalid user name.");
                             string killer = await chunk.Stream.ReadString();
@@ -43,8 +45,10 @@ namespace FortniteReplayAnalyzer
                             return chunk;
                         case "AthenaMatchTeamStats":
                             return chunk;
+                        case "checkpoint":
+                            return chunk;
                         default:
-                            Console.WriteLine("UNKNOWN CASE");
+                            Console.WriteLine("UNKNOWN CASE" + eventInfo.Group);
                             return chunk;
                     }
                 default:

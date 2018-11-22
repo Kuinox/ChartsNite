@@ -15,7 +15,7 @@ namespace Common.StreamHelpers
             int toRead = count;
             while (toRead > 0)
             {
-                int read = await stream.ReadAsync(buffer, count - toRead, count);//TODO AWAIT
+                int read = await stream.ReadAsync(buffer, count - toRead, count);//TODO AWAIT EVERYWHERE
                 if (read == 0)
                 {
                     throw new EndOfStreamException("Did not read the expected number of bytes.");

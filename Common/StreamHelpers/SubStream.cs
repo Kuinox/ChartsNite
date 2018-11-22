@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Common.StreamHelpers
 {
@@ -57,6 +59,16 @@ namespace Common.StreamHelpers
             CheckPositionUpperStream();
             if (Position + count > Length) throw new InvalidOperationException();
             int read = _stream.Read(buffer, offset, count);
+            _relativePosition += read;
+            return read;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            CheckPositionUpperStream();
+            if (Position + count > Length) throw new InvalidOperationException();
+            int read = await _stream.ReadAsync(buffer, offset, count, cancellationToken);
             _relativePosition += read;
             return read;
         }
