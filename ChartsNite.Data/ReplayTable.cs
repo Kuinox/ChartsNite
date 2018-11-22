@@ -4,6 +4,7 @@ using CK.SqlServer.Setup;
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ChartsNite.Data
@@ -80,14 +81,10 @@ namespace ChartsNite.Data
                     killTable.Rows.Add(row);
                 }
                 sqlCommand.Parameters.Add("@Kills", SqlDbType.Structured).Value = killTable;
-                sqlCommand.Parameters.Add("@Output", SqlDbType.Int).Direction = ParameterDirection.Output;
+                    sqlCommand.Parameters.Add("@Output", SqlDbType.Int).Direction = ParameterDirection.Output;
                 sqlCommand.Prepare();
-                int reader = await ctx[Database].ExecuteQueryAsync(sqlCommand, async (command, token) =>
-                {
-                    var test = await command.ExecuteReaderAsync(token);
-                    return test.GetInt32(0);
-                });
-                return reader;
+                int id = await ctx[Database].ExecuteNonQueryAsync(sqlCommand);
+                return (int)sqlCommand.Parameters["@Output"].Value;
             }
         }
     }

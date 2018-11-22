@@ -29,7 +29,7 @@ namespace UnrealReplayAnalyzer
         public override async Task<ChunkInfo> ReadChunk()
         {
             ChunkInfo chunk = await base.ReadChunk();
-
+            if (chunk == null) return null;
             switch ((ChunkType) chunk.Type)
             {
                 case ChunkType.Header:

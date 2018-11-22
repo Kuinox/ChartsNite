@@ -42,7 +42,7 @@ begin
     insert into ChartsNite.tReplay
         (OwnerId, ReplayDate, UploadDate, Duration, CodeName, FortniteVersion)
     values(@OwnerId, @ReplayDate, GETUTCDATE(), @Duration, @CodeName, @FortniteVersion);
-    set @Output = SCOPE_IDENTITY();
+    select @Output = SCOPE_IDENTITY();
 
     insert into ChartsNite.tEvent
         (OccuredAt, ReplayId)

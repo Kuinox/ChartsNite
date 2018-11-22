@@ -8,15 +8,13 @@ namespace FortniteReplayAnalyzer
 {
     public class KillEventChunk : EventInfo
     {
-        public readonly uint Size;
         public readonly byte[] UnknownData;
         public readonly string PlayerKilled;
         public readonly string PlayerKilling;
         public readonly WeaponType Weapon;
         public readonly State VictimState;
-        public KillEventChunk(EventInfo info, uint size, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
+        public KillEventChunk(EventInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
         {
-            Size = size;
             UnknownData = unknownData;
             PlayerKilled = playerKilled;
             PlayerKilling = playerKilling;
