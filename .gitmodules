@@ -1,0 +1,3 @@
+[submodule "Analyzer/Replays/"]
+	path = Analyzer/Replays/
+	url = https://github.com/Kuinox/FortniteReplayCollection
