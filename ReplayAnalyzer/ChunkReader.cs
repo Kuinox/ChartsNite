@@ -39,7 +39,7 @@ namespace UnrealReplayAnalyzer
         {
             if (FileMagic != await stream.ReadUInt32())
             {
-                throw new InvalidDataException("Invalid file. Probably not an Unreal Replay.");
+                //throw new InvalidDataException("Invalid file. Probably not an Unreal Replay.");
             }
             uint fileVersion = await stream.ReadUInt32();
             int lengthInMs = await stream.ReadInt32();
@@ -50,7 +50,8 @@ namespace UnrealReplayAnalyzer
             DateTime timestamp = DateTime.MinValue;
             if (fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
             {
-                timestamp = new DateTime(await stream.ReadInt64());
+                await stream.ReadInt64();
+                //timestamp = new DateTime(await stream.ReadInt64());
             }
             bool bCompressed = false;
             if (fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION)
@@ -63,15 +64,8 @@ namespace UnrealReplayAnalyzer
 
         public virtual async Task<ChunkInfo> ReadChunk()
         {
-            uint chunkType;
-            try
-            {
-                chunkType = await _stream.ReadUInt32();
-            }
-            catch (EndOfStreamException)
-            {
-                return null;
-            }
+            (bool success, uint chunkType) = await _stream.TryReadUInt32();
+            if(!success) return null;
             int sizeInBytes = await _stream.ReadInt32();
             if (sizeInBytes < 0)
             {

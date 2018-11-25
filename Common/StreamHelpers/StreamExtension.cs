@@ -24,6 +24,28 @@ namespace Common.StreamHelpers
             }
             return buffer;
         }
+
+        public static async Task<(bool success, byte[] value)> TryReadBytes(this Stream stream, int count)
+        {
+            byte[] buffer = new byte[count];
+            int toRead = count;
+            while (toRead > 0)
+            {
+                int read = await stream.ReadAsync(buffer, count - toRead, count);
+                if (read == 0)
+                {
+                    return (false, buffer);
+                }
+                toRead -= read;
+            }
+            return (true,buffer);
+        }
+
+        public static async Task<(bool success, uint value)> TryReadUInt32(this Stream stream)
+        {
+            (bool success, byte[] value) = await stream.TryReadBytes(4);
+            return (success, BitConverter.ToUInt32(value, 0));
+        }
         public static async Task<byte> ReadByteOnce( this Stream stream) => (await stream.ReadBytes(1))[0];
         public static async Task<uint> ReadUInt32( this Stream stream) => BitConverter.ToUInt32(await stream.ReadBytes(4), 0);
         public static async Task<int> ReadInt32( this Stream stream) => BitConverter.ToInt32(await stream.ReadBytes(4),0);

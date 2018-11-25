@@ -13,21 +13,21 @@ namespace Common.StreamHelpers
         readonly long _startPosition;
         readonly long _maxPosition;
         bool _disposed;
-        readonly bool _isLengthAvailable;
         readonly bool _isPositionAvailable;
         long _relativePosition;
         public SubStream(Stream stream, long length, bool leaveOpen = false)
         {
+            bool isLengthAvailable;
             try
             {
                 long temp = stream.Length;
-                _isLengthAvailable = true;
+                isLengthAvailable = true;
             }
             catch (NotSupportedException)
             {
-                _isLengthAvailable = false;
+                isLengthAvailable = false;
             }
-            if (_isLengthAvailable && length > stream.Length) throw new InvalidOperationException();
+            if (isLengthAvailable && length > stream.Length) throw new InvalidOperationException();
             try
             {
                 long temp = stream.Position;
@@ -57,8 +57,12 @@ namespace Common.StreamHelpers
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
-            if (Position + count > Length) throw new InvalidOperationException();
-            int read = _stream.Read(buffer, offset, count);
+            int toRead = count;
+            if (count + Position > Length)
+            {
+                toRead = (int) (Length - Position);
+            }
+            int read = _stream.Read(buffer, offset, toRead);
             _relativePosition += read;
             return read;
         }
@@ -67,10 +71,15 @@ namespace Common.StreamHelpers
         {
             if (_disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
-            if (Position + count > Length) throw new InvalidOperationException();
-            int read = await _stream.ReadAsync(buffer, offset, count, cancellationToken);
+            int toRead = count;
+            if (count + Position > Length)
+            {
+                toRead = (int) (Length - Position);
+            }
+            int read = await _stream.ReadAsync(buffer, offset, toRead, cancellationToken);
             _relativePosition += read;
             return read;
+
         }
 
         public override long Seek(long offset, SeekOrigin origin)//TODO change seek long returned based on substream
@@ -123,7 +132,7 @@ namespace Common.StreamHelpers
 
         void CheckPositionUpperStream()
         {
-            if(_isPositionAvailable && _startPosition+_relativePosition != _stream.Position) throw new InvalidOperationException("Upper stream Position changed");
+            if (_isPositionAvailable && _startPosition + _relativePosition != _stream.Position) throw new InvalidOperationException("Upper stream Position changed");
         }
 
         public override long Position

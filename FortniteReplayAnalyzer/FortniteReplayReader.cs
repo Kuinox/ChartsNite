@@ -10,6 +10,10 @@ namespace FortniteReplayAnalyzer
 {
     public class FortniteReplayReader : ReplayReader
     {
+
+        public string FortniteRelease { get; set; }
+        public string SubGame { get; set; }
+        public string MapPath { get; set; }
         FortniteReplayReader(ChunkReader reader) : base(reader)
         {
         }
@@ -23,6 +27,36 @@ namespace FortniteReplayAnalyzer
         public override async Task<ChunkInfo> ReadChunk()
         {
             ChunkInfo chunk = await base.ReadChunk();
+            if (chunk.Type == (uint) ChunkType.Header)
+            {
+                //following is an attempt and shouldnt be read as fact but an attempt to known what is the data behind.
+                uint fortniteMagicNumber = await chunk.Stream.ReadUInt32();
+                uint headerVersion = await chunk.Stream.ReadUInt32();
+                uint fortniteVersionUUID = await chunk.Stream.ReadUInt32();
+                uint seasonNumber = await chunk.Stream.ReadUInt32();
+                uint alwaysZero = await chunk.Stream.ReadUInt32();
+
+                byte[] guid;
+                if (headerVersion > 11)
+                {
+                    guid = await chunk.Stream.ReadBytes(16);
+                }
+
+                short alwaysFour = await chunk.Stream.ReadInt16();
+                uint anotherUnknownNumber = await chunk.Stream.ReadUInt32();//want from 20 to 21 after a version upgrade
+                uint numberThatKeepValueAcrossReplays = await chunk.Stream.ReadUInt32();
+                FortniteRelease = await chunk.Stream.ReadString();
+                uint alwaysOne = await chunk.Stream.ReadUInt32();
+                MapPath = await chunk.Stream.ReadString();
+                uint alwaysZero2 = await chunk.Stream.ReadUInt32();
+                uint alwaysThree = await chunk.Stream.ReadUInt32();
+                uint alwaysOne2 = await chunk.Stream.ReadUInt32();
+                if (alwaysOne2 == 1)
+                {
+                    SubGame = await chunk.Stream.ReadString();
+                } 
+                if(chunk.Stream.Position != chunk.SizeInBytes) throw new InvalidDataException("Didnt expected more data");
+            }
             switch (chunk)
             {
                 case EventInfo eventInfo:
