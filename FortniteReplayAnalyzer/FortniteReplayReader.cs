@@ -29,10 +29,10 @@ namespace FortniteReplayAnalyzer
                     switch (eventInfo.Group)
                     {
                         case "playerElim":
-                            using (StreamWriter writer = File.AppendText("dump"))
-                            {
-                                //await writer.WriteLineAsync(BitConverter.ToString(await eventInfo.Stream.ReadBytes(eventInfo.EventSizeInBytes)));
-                            }
+                            //using (StreamWriter writer = File.AppendText("dump"))
+                            //{
+                            //    await writer.WriteLineAsync(BitConverter.ToString(await eventInfo.Stream.ReadBytes(eventInfo.EventSizeInBytes)));
+                            //}
                             return chunk;
                             //if (eventInfo.EventSizeInBytes < 45)
                             //{

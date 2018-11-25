@@ -39,7 +39,7 @@ namespace UnrealReplayAnalyzer
         {
             if (FileMagic != await stream.ReadUInt32())
             {
-                throw new InvalidDataException("Invalid file. Probably not a replayReader.");
+                throw new InvalidDataException("Invalid file. Probably not an Unreal Replay.");
             }
             uint fileVersion = await stream.ReadUInt32();
             int lengthInMs = await stream.ReadInt32();

@@ -27,7 +27,9 @@ namespace Common.StreamHelpers
         public static async Task<byte> ReadByteOnce( this Stream stream) => (await stream.ReadBytes(1))[0];
         public static async Task<uint> ReadUInt32( this Stream stream) => BitConverter.ToUInt32(await stream.ReadBytes(4), 0);
         public static async Task<int> ReadInt32( this Stream stream) => BitConverter.ToInt32(await stream.ReadBytes(4),0);
+        public static async Task<short> ReadInt16( this Stream stream) => BitConverter.ToInt16(await stream.ReadBytes(2),0);
         public static async Task<long> ReadInt64( this Stream stream) => BitConverter.ToInt64(await stream.ReadBytes(8),0);
+
         public static async Task<string> ReadString( this Stream stream)
         {
             int length = await stream.ReadInt32();
