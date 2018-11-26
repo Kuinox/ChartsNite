@@ -3,6 +3,7 @@ using ReplayAnalyzer;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,7 +15,9 @@ namespace Analyzer
         {
 
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            foreach (string s in Directory.GetFiles("Replays\\", "*.replay"))
+            string[] files = Directory.GetFiles("Replays\\", "*.replay");
+            var filesSorted = files.OrderByDescending(File.GetLastWriteTime);
+            foreach (string s in filesSorted)
             {
                 try
                 {

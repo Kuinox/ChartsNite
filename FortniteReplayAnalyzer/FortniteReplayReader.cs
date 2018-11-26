@@ -1,5 +1,6 @@
 ﻿using ReplayAnalyzer;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,9 +12,10 @@ namespace FortniteReplayAnalyzer
     public class FortniteReplayReader : ReplayReader
     {
 
-        public string FortniteRelease { get; set; }
+        public string Release { get; set; }
         public string SubGame { get; set; }
         public string MapPath { get; set; }
+        public uint Version { get; set; }
         FortniteReplayReader(ChunkReader reader) : base(reader)
         {
         }
@@ -27,15 +29,20 @@ namespace FortniteReplayAnalyzer
         public override async Task<ChunkInfo> ReadChunk()
         {
             ChunkInfo chunk = await base.ReadChunk();
+            if (chunk == null) return null;
             if (chunk.Type == (uint) ChunkType.Header)
             {
                 //following is an attempt and shouldnt be read as fact but an attempt to known what is the data behind.
                 uint fortniteMagicNumber = await chunk.Stream.ReadUInt32();
+                if (fortniteMagicNumber != 754295101)
+                {
+                    throw new InvalidDataException("Not the right magic number");
+                }
                 uint headerVersion = await chunk.Stream.ReadUInt32();
-                uint fortniteVersionUUID = await chunk.Stream.ReadUInt32();
-                uint seasonNumber = await chunk.Stream.ReadUInt32();
+                Version = await chunk.Stream.ReadUInt32();
+                uint notSeasonNumber = await chunk.Stream.ReadUInt32();//but it increased shortly after, https://fortnite.gamepedia.com/Season_6#Map_v6.02_.28October_11.29
                 uint alwaysZero = await chunk.Stream.ReadUInt32();
-
+                Debug.Assert(alwaysZero == 0);
                 byte[] guid;
                 if (headerVersion > 11)
                 {
@@ -43,18 +50,23 @@ namespace FortniteReplayAnalyzer
                 }
 
                 short alwaysFour = await chunk.Stream.ReadInt16();
+                Debug.Assert(alwaysFour == 4);
                 uint anotherUnknownNumber = await chunk.Stream.ReadUInt32();//want from 20 to 21 after a version upgrade
                 uint numberThatKeepValueAcrossReplays = await chunk.Stream.ReadUInt32();
-                FortniteRelease = await chunk.Stream.ReadString();
+                Release = await chunk.Stream.ReadString();
                 uint alwaysOne = await chunk.Stream.ReadUInt32();
+                Debug.Assert(alwaysOne == 1);
                 MapPath = await chunk.Stream.ReadString();
                 uint alwaysZero2 = await chunk.Stream.ReadUInt32();
+                Debug.Assert(alwaysZero2 == 0);
                 uint alwaysThree = await chunk.Stream.ReadUInt32();
+                Debug.Assert(alwaysThree == 3);
                 uint alwaysOne2 = await chunk.Stream.ReadUInt32();
                 if (alwaysOne2 == 1)
                 {
                     SubGame = await chunk.Stream.ReadString();
                 } 
+                Console.WriteLine(Release + " "+notSeasonNumber+" "+ anotherUnknownNumber+ " "+numberThatKeepValueAcrossReplays+ " "+SubGame);
                 if(chunk.Stream.Position != chunk.SizeInBytes) throw new InvalidDataException("Didnt expected more data");
             }
             switch (chunk)
