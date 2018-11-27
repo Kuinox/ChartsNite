@@ -37,7 +37,7 @@ namespace Analyzer
 
         static async Task ParseReplay(string saveName)
         {
-            Console.WriteLine("______________________________________" + saveName);
+          //  Console.WriteLine("______________________________________" + saveName);
             using (FileStream saveFile = File.OpenRead(saveName))
             using (FortniteReplayReader replayStream = await FortniteReplayReader.FortniteReplayFromStream(saveFile))
             {

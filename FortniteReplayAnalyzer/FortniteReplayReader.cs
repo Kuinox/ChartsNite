@@ -1,5 +1,6 @@
 ﻿using ReplayAnalyzer;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -16,6 +17,7 @@ namespace FortniteReplayAnalyzer
         public string SubGame { get; set; }
         public string MapPath { get; set; }
         public uint Version { get; set; }
+        static List<string> awful = new List<string>();
         FortniteReplayReader(ChunkReader reader) : base(reader)
         {
         }
@@ -39,7 +41,7 @@ namespace FortniteReplayAnalyzer
                     throw new InvalidDataException("Not the right magic number");
                 }
                 uint headerVersion = await chunk.Stream.ReadUInt32();
-                Version = await chunk.Stream.ReadUInt32();
+                uint notVersion = await chunk.Stream.ReadUInt32(); //Change value between versions, but not always
                 uint notSeasonNumber = await chunk.Stream.ReadUInt32();//but it increased shortly after, https://fortnite.gamepedia.com/Season_6#Map_v6.02_.28October_11.29
                 uint alwaysZero = await chunk.Stream.ReadUInt32();
                 Debug.Assert(alwaysZero == 0);
@@ -52,21 +54,32 @@ namespace FortniteReplayAnalyzer
                 short alwaysFour = await chunk.Stream.ReadInt16();
                 Debug.Assert(alwaysFour == 4);
                 uint anotherUnknownNumber = await chunk.Stream.ReadUInt32();//want from 20 to 21 after a version upgrade
-                uint numberThatKeepValueAcrossReplays = await chunk.Stream.ReadUInt32();
+                Version = await chunk.Stream.ReadUInt32();
                 Release = await chunk.Stream.ReadString();
-                uint alwaysOne = await chunk.Stream.ReadUInt32();
+                uint alwaysOne = await chunk.Stream.ReadUInt32(); // we get a always one b4 a string
                 Debug.Assert(alwaysOne == 1);
                 MapPath = await chunk.Stream.ReadString();
                 uint alwaysZero2 = await chunk.Stream.ReadUInt32();
                 Debug.Assert(alwaysZero2 == 0);
                 uint alwaysThree = await chunk.Stream.ReadUInt32();
                 Debug.Assert(alwaysThree == 3);
-                uint alwaysOne2 = await chunk.Stream.ReadUInt32();
+                uint alwaysOne2 = await chunk.Stream.ReadUInt32();// we get a always one b4 a string    
                 if (alwaysOne2 == 1)
                 {
                     SubGame = await chunk.Stream.ReadString();
-                } 
-                Console.WriteLine(Release + " "+notSeasonNumber+" "+ anotherUnknownNumber+ " "+numberThatKeepValueAcrossReplays+ " "+SubGame);
+                }
+
+                string output = Release + " " + notSeasonNumber+ " "+headerVersion+" "+ anotherUnknownNumber + " "+MapPath+ " "+SubGame;
+                if (!awful.Contains(output))
+                {
+                    awful.Add(output);
+                    awful.Sort();
+                }
+                Console.WriteLine("________________");
+                foreach (string s in awful)
+                {
+                    Console.WriteLine(s);
+                }
                 if(chunk.Stream.Position != chunk.SizeInBytes) throw new InvalidDataException("Didnt expected more data");
             }
             switch (chunk)

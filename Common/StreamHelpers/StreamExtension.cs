@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,7 +37,7 @@ namespace Common.StreamHelpers
                 }
                 toRead -= read;
             }
-            return (true,buffer);
+            return (true, buffer);
         }
 
         public static async Task<(bool success, uint value)> TryReadUInt32(this Stream stream)
@@ -46,13 +45,15 @@ namespace Common.StreamHelpers
             (bool success, byte[] value) = await stream.TryReadBytes(4);
             return (success, BitConverter.ToUInt32(value, 0));
         }
-        public static async Task<byte> ReadByteOnce( this Stream stream) => (await stream.ReadBytes(1))[0];
-        public static async Task<uint> ReadUInt32( this Stream stream) => BitConverter.ToUInt32(await stream.ReadBytes(4), 0);
-        public static async Task<int> ReadInt32( this Stream stream) => BitConverter.ToInt32(await stream.ReadBytes(4),0);
-        public static async Task<short> ReadInt16( this Stream stream) => BitConverter.ToInt16(await stream.ReadBytes(2),0);
-        public static async Task<long> ReadInt64( this Stream stream) => BitConverter.ToInt64(await stream.ReadBytes(8),0);
+        public static async Task<byte> ReadByteOnce(this Stream stream) => (await stream.ReadBytes(1))[0];
+        public static async Task<uint> ReadUInt32(this Stream stream) => BitConverter.ToUInt32(await stream.ReadBytes(4), 0);
 
-        public static async Task<string> ReadString( this Stream stream)
+        public static async Task<float> ReadSingle(this Stream stream) => BitConverter.ToSingle(await stream.ReadBytes(4), 0);
+        public static async Task<int> ReadInt32(this Stream stream) => BitConverter.ToInt32(await stream.ReadBytes(4), 0);
+        public static async Task<short> ReadInt16(this Stream stream) => BitConverter.ToInt16(await stream.ReadBytes(2), 0);
+        public static async Task<long> ReadInt64(this Stream stream) => BitConverter.ToInt64(await stream.ReadBytes(8), 0);
+
+        public static async Task<string> ReadString(this Stream stream)
         {
             int length = await stream.ReadInt32();
             bool isUnicode = length < 0;
@@ -73,13 +74,13 @@ namespace Common.StreamHelpers
                     if (stream.Length > length)
                     {
                         dump = Encoding.ASCII.GetString(await stream.ReadBytes(length));
-                        
+
                     }
                     else
                     {
                         dump = Encoding.ASCII.GetString(await stream.ReadBytes((int)(stream.Length - stream.Position)));
                     }
-                    throw new InvalidDataException("string length too high, Stream DUMP: "+ dump);
+                    throw new InvalidDataException("string length too high, Stream DUMP: " + dump);
                 }
                 data = await stream.ReadBytes(length);
                 value = Encoding.Default.GetString(data);
