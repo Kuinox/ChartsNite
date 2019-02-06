@@ -1,4 +1,4 @@
-﻿namespace FortniteReplayAnalyzer
+﻿namespace FortniteReplayParser
 {
     static class UserNameChecker
     {

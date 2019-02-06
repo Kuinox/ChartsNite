@@ -1,10 +1,10 @@
 ﻿using Common.StreamHelpers;
-using ReplayAnalyzer;
+using UnrealReplayParser;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace UnrealReplayAnalyzer
+namespace UnrealReplayParser
 {
     public class ChunkReader : IDisposable
     {
@@ -50,7 +50,7 @@ namespace UnrealReplayAnalyzer
             DateTime timestamp = DateTime.MinValue;
             if (fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
             {
-                await stream.ReadInt64();
+                timestamp = DateTime.FromBinary(await stream.ReadInt64());
                 //timestamp = new DateTime(await stream.ReadInt64());
             }
             bool bCompressed = false;
@@ -61,10 +61,13 @@ namespace UnrealReplayAnalyzer
             return new ChunkReader(new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
                 bIsLive, bCompressed, fileVersion), stream);
         }
-
-        public virtual async Task<ChunkInfo> ReadChunk()
+        /// <summary>
+        /// Return <see cref="null"/> if it couldn't read the chunk length.
+        /// </summary>
+        /// <returns></returns>
+        public virtual async Task<ChunkInfo?> ReadChunk() //TODO see if it's possible to avoid null.
         {
-            (bool success, uint chunkType) = await _stream.TryReadUInt32();
+            (bool success, uint chunkType) = await _stream.TryReadUInt32(); //TODO WTF is happening here
             if(!success) return null;
             int sizeInBytes = await _stream.ReadInt32();
             if (sizeInBytes < 0)

@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using Common.StreamHelpers;
 
-namespace ReplayAnalyzer
+namespace UnrealReplayParser
 {
     public class ChunkInfo : IDisposable
     {

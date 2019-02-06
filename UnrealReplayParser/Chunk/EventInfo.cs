@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using UnrealReplayAnalyzer;
+using UnrealReplayParser;
 
-namespace ReplayAnalyzer
+namespace UnrealReplayParser
 {
     public class EventInfo : ChunkInfo
     {

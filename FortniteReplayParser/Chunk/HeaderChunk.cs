@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using Common.StreamHelpers;
-using ReplayAnalyzer;
+using UnrealReplayParser;
 
-namespace FortniteReplayAnalyzer.Chunk
+namespace FortniteReplayParser.Chunk
 {
     public class HeaderChunk : ChunkInfo
     {

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using Common.StreamHelpers;
-using ReplayAnalyzer;
+using UnrealReplayParser;
 
-namespace UnrealReplayAnalyzer.Chunk
+namespace UnrealReplayParser.Chunk
 {
     class HeaderInfo : ChunkInfo
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ReplayAnalyzer
+namespace UnrealReplayParser
 {
     public class ReplayInfo
     {
@@ -14,8 +14,10 @@ namespace ReplayAnalyzer
         public readonly long TotalDataSizeInBytes;
         public readonly bool BIsLive;
         public readonly bool BCompressed;
-
-        public ChunkInfo HeaderChunk;
+        /// <summary>
+        /// This is <see cref="null"/> until the <see cref="ChunkReader"/> have read the Header Chunk
+        /// </summary>
+        public ChunkInfo? HeaderChunk;
 
         public readonly uint FileVersion;
 

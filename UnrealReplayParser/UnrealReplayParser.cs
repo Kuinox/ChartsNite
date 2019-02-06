@@ -1,11 +1,11 @@
 ﻿using Common.StreamHelpers;
-using ReplayAnalyzer;
+using UnrealReplayParser;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace UnrealReplayAnalyzer
+namespace UnrealReplayParser
 {
     public enum ChunkType : uint
     {
@@ -16,20 +16,20 @@ namespace UnrealReplayAnalyzer
         Unknown = 0xFFFFFFFF
     };
 
-    public class ReplayReader : ChunkReader
+    public class UnrealReplayParser : ChunkReader
     {
-        protected ReplayReader(ReplayInfo info, Stream stream) : base(info, stream)
+        protected UnrealReplayParser(ReplayInfo info, Stream stream) : base(info, stream)
         {
         }
 
-        protected ReplayReader(ChunkReader reader) : base(reader)
+        public UnrealReplayParser(ChunkReader reader) : base(reader)
         {
             
         }
 
-        public override async Task<ChunkInfo> ReadChunk()
+        public override async Task<ChunkInfo?> ReadChunk()
         {
-            ChunkInfo chunk = await base.ReadChunk();
+            ChunkInfo? chunk = await base.ReadChunk();
             if (chunk == null) return null;
             switch ((ChunkType) chunk.Type)
             {

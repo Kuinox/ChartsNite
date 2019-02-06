@@ -10,7 +10,7 @@
     <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="CK.AspNet" Version="2.1.3--0023-develop" />
     <PackageReference Include="CK.AspNet.Auth" Version="3.0.1--0039-develop" />

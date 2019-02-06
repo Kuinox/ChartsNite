@@ -2,6 +2,12 @@
   <Import Project="..\Shared.props" />
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+
+    <NullableContextOptions>enable</NullableContextOptions>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.DB.Actor" Version="3.0.1--0028-develop" />

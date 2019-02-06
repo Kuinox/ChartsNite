@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using ReplayAnalyzer;
+using UnrealReplayParser;
 
-namespace FortniteReplayAnalyzer
+namespace FortniteReplayParser
 {
     public class KillEventChunk : EventInfo
     {
@@ -39,6 +39,7 @@ namespace FortniteReplayAnalyzer
             Sniper = 6,
             PickAxe = 7,
             Grenade = 8,
+            AlsoGrenade = 9,
             GrenadeLauncher = 10,
             RocketLauncher = 11,
             MiniGun = 12,
@@ -50,8 +51,10 @@ namespace FortniteReplayAnalyzer
             StinkBomb = 23,
             OutOfMap = 24,
             Kevin = 25,
+            Turret = 26,
             KevinZombie = 28,
-            Suicide = 32
+            Suicide = 32,
+            BiplaneGun = 38
         }
     }
 }

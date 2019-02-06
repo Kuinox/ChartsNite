@@ -2,15 +2,15 @@
 using CK.Core;
 using CK.SqlServer;
 using Common.StreamHelpers;
-using FortniteReplayAnalyzer;
+using FortniteReplayParser;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ReplayAnalyzer;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using UnrealReplayParser;
 
 namespace WebApp.Controllers
 {
@@ -34,13 +34,14 @@ namespace WebApp.Controllers
             using (SHA1Stream hashStream = new SHA1Stream(replayStream, true, false))
             using (Stream saveStream = System.IO.File.OpenWrite("save"))
             using (Stream stream = new CopyAsYouReadStream(hashStream, saveStream))
-            using (FortniteReplayReader replay = await FortniteReplayReader.FortniteReplayFromStream(stream))
+            using(ChunkReader chunkReader = await ChunkReader.FromStream(stream))
+            using (FortniteReplayParser.FortniteReplayParser replay = new FortniteReplayParser.FortniteReplayParser(chunkReader))
             {
                 info = replay.Info;
-                ChunkInfo chunk;
+                ChunkInfo? chunk;
                 do
                 {
-                    using (chunk = await replay.ReadChunk())
+                    using (chunk = await replay.ReadChunk())//TODO redo the loop, or abstract it.
                     {
                         if (chunk is KillEventChunk killEvent) //TODO: throw if not disposed
                         {
