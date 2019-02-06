@@ -8,24 +8,26 @@ namespace FortniteReplayParser
 {
     public class KillEventChunk : EventInfo
     {
+        public readonly bool CorrectlyParsed;
         public readonly byte[] UnknownData;
         public readonly string PlayerKilled;
         public readonly string PlayerKilling;
         public readonly WeaponType Weapon;
         public readonly State VictimState;
-        public KillEventChunk(EventInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
+        public KillEventChunk(EventInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState, bool correctlyParsed) :base(info)
         {
             UnknownData = unknownData;
             PlayerKilled = playerKilled;
             PlayerKilling = playerKilling;
             Weapon = weapon;
             VictimState = victimState;
+            CorrectlyParsed = correctlyParsed;
         }
-
         public enum State
         {
             Died,
-            KnockedDown
+            KnockedDown,
+            Unknow = int.MaxValue
         }
 
         public enum WeaponType : byte
@@ -54,7 +56,8 @@ namespace FortniteReplayParser
             Turret = 26,
             KevinZombie = 28,
             Suicide = 32,
-            BiplaneGun = 38
+            BiplaneGun = 38,
+            Unknown = byte.MaxValue
         }
     }
 }

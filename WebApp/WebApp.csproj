@@ -28,7 +28,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ChartsNite.Data\ChartsNite.Data.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\DownloadManager\ChartsNite.DownloadManager.csproj" />
     <ProjectReference Include="..\FortniteReplayParser\FortniteReplayParser.csproj" />
   </ItemGroup>
 
