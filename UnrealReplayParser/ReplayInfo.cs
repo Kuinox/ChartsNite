@@ -15,9 +15,8 @@ namespace UnrealReplayParser
         public readonly bool BIsLive;
         public readonly bool BCompressed;
         /// <summary>
-        /// This is <see cref="null"/> until the <see cref="ChunkReader"/> have read the Header Chunk
+        /// This is <see cref="null"/> until the <see cref="ChunkParser"/> have read the Header Chunk
         /// </summary>
-        public ChunkInfo? HeaderChunk;
 
         public readonly uint FileVersion;
 

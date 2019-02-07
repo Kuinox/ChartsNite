@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using ChartsNite.TestHelper;
 using NUnit.Framework;
-using UnrealReplayParser;
 
 namespace UnrealReplayParser.Tests
 {
@@ -13,7 +12,7 @@ namespace UnrealReplayParser.Tests
         public async Task CanReadWithoutException(string replayPath)
         {
             using (FileStream replayStream = File.OpenRead(replayPath))
-            using (UnrealReplayParser unrealParser = new UnrealReplayParser(await ChunkReader.FromStream(replayStream)))
+            using (UnrealReplayParser unrealParser = await UnrealReplayParser.FromStream(replayStream))
             {
                 {
                     while (true)

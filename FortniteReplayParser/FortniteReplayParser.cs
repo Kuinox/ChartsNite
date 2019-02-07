@@ -20,10 +20,6 @@ namespace FortniteReplayParser
         {
         }
 
-        public FortniteReplayParser(ChunkReader chunkReader) : base(new UnrealReplayParser.UnrealReplayParser(chunkReader))
-        {
-        }
-
         public override async Task<ChunkInfo?> ReadChunk()
         {
             ChunkInfo? chunk = await base.ReadChunk();

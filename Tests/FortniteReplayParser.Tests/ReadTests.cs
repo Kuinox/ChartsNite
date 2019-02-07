@@ -14,7 +14,7 @@ namespace FortniteReplayParser.Tests
         public async Task CanReadWithoutException(string replayPath)
         {
             using (FileStream replayStream = File.OpenRead(replayPath))
-            using(FortniteReplayParser fortniteParser = new FortniteReplayParser(await ChunkReader.FromStream(replayStream)))
+            using(FortniteReplayParser fortniteParser = new FortniteReplayParser(await UnrealReplayParser.UnrealReplayParser.FromStream(replayStream)))
             {
                 {
                     while (true)

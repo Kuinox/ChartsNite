@@ -14,6 +14,12 @@ namespace Common.StreamHelpers
         readonly long _maxPosition;
         readonly bool _isPositionAvailable;
         long _relativePosition;
+        /// <summary>
+        /// Please read the stream to end or use <see cref="DisposeAsync"/> if you want to be fully <see langword="async"/>.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="length"></param>
+        /// <param name="leaveOpen"></param>
         internal SubStream(Stream stream, long length, bool leaveOpen = false)
         {
             bool isLengthAvailable;
@@ -147,6 +153,33 @@ namespace Common.StreamHelpers
                 if (Disposed) throw new ObjectDisposedException(GetType().Name);
                 CheckPositionUpperStream();
                 _stream.Position = value + _startPosition;
+            }
+        }
+
+        public async Task DisposeAsync()
+        {
+            if (Disposed) return;
+            CheckPositionUpperStream();
+            int toSkip = (int)(Length - Position);
+            if (toSkip == 0) return;
+            if (CanSeek)
+            {
+                Seek(Length, SeekOrigin.Begin);
+            }
+            else
+            if (CanRead)
+            {
+                toSkip = (int)(Length - Position);
+                while (toSkip != 0)
+                {
+                    int read = await ReadAsync(new byte[toSkip], 0, toSkip);
+                    toSkip -= read;
+                    if (read == 0) throw new InvalidDataException("End of stream when i should have skipped data.");
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 

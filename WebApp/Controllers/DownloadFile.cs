@@ -34,7 +34,7 @@ namespace WebApp.Controllers
             using (SHA1Stream hashStream = new SHA1Stream(replayStream, true, false))
             using (Stream saveStream = System.IO.File.OpenWrite("save"))
             using (Stream stream = new CopyAsYouReadStream(hashStream, saveStream))
-            using(ChunkReader chunkReader = await ChunkReader.FromStream(stream))
+            using (var chunkReader = await UnrealReplayParser.UnrealReplayParser.FromStream(stream))
             using (FortniteReplayParser.FortniteReplayParser replay = new FortniteReplayParser.FortniteReplayParser(chunkReader))
             {
                 info = replay.Info;
