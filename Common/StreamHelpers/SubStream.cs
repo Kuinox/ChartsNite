@@ -12,10 +12,9 @@ namespace Common.StreamHelpers
         readonly bool _leaveOpen;
         readonly long _startPosition;
         readonly long _maxPosition;
-        bool _disposed;
         readonly bool _isPositionAvailable;
         long _relativePosition;
-        public SubStream(Stream stream, long length, bool leaveOpen = false)
+        internal SubStream(Stream stream, long length, bool leaveOpen = false)
         {
             bool isLengthAvailable;
             try
@@ -48,14 +47,14 @@ namespace Common.StreamHelpers
 
         public override void Flush()
         {
-            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            if (Disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
             _stream.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            if (Disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
             int toRead = count;
             if (count + Position > Length)
@@ -69,7 +68,7 @@ namespace Common.StreamHelpers
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            if (Disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
             int toRead = count;
             if (count + Position > Length)
@@ -84,7 +83,7 @@ namespace Common.StreamHelpers
 
         public override long Seek(long offset, SeekOrigin origin)//TODO change seek long returned based on substream
         {
-            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            if (Disposed) throw new ObjectDisposedException(GetType().Name);
             CheckPositionUpperStream();
             long pos;
             switch (origin)
@@ -116,7 +115,7 @@ namespace Common.StreamHelpers
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (_disposed) throw new ObjectDisposedException(GetType().Name);
+            if (Disposed) throw new ObjectDisposedException(GetType().Name);
             if (_isPositionAvailable && Position + count > Length) throw new InvalidOperationException();
             _stream.Write(buffer, offset, count);
             _relativePosition += count;
@@ -139,20 +138,23 @@ namespace Common.StreamHelpers
         {
             get
             {
-                if (_disposed) throw new ObjectDisposedException(GetType().Name);
+                if (Disposed) throw new ObjectDisposedException(GetType().Name);
                 CheckPositionUpperStream();
                 return _relativePosition;
             }
             set
             {
-                if (_disposed) throw new ObjectDisposedException(GetType().Name);
+                if (Disposed) throw new ObjectDisposedException(GetType().Name);
                 CheckPositionUpperStream();
                 _stream.Position = value + _startPosition;
             }
         }
+
+        public bool Disposed { get; private set; }
+
         protected override void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (Disposed) return;
             CheckPositionUpperStream();
             if (CanSeek)
             {
@@ -175,7 +177,7 @@ namespace Common.StreamHelpers
             }
             Debug.Assert(Length == Position);
             if (!_leaveOpen) _stream.Dispose();
-            _disposed = true;
+            Disposed = true;
         }
     }
 }

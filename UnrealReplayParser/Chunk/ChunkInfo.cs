@@ -22,12 +22,7 @@ namespace UnrealReplayParser
         {
             Type = info.Type;
             SizeInBytes = info.SizeInBytes;
-            Stream = new SubStream(info.Stream, info.Stream.Length-info.Stream.Position, true);
-        }
-
-        protected void Dispose(bool disposing)
-        {
-           Stream.Dispose();
+            Stream = info.Stream;
         }
 
         public void Dispose()

@@ -10,11 +10,13 @@ namespace UnrealReplayParser
     {
         const uint FileMagic = 0x1CA2E27F;
         readonly Stream _stream;
+        readonly SubStreamFactory _subStreamFactory;
         readonly bool _streamLengthAvailable;//TODO Use this
         protected ChunkReader(ReplayInfo info, Stream stream)
         {
             Info = info;
             _stream = stream;
+            _subStreamFactory = new SubStreamFactory(stream);
             try
             {
                 long length = _stream.Length;
@@ -31,6 +33,7 @@ namespace UnrealReplayParser
             Info = reader.Info;
             _stream = reader._stream;
             _streamLengthAvailable = reader._streamLengthAvailable;
+            _subStreamFactory = reader._subStreamFactory;
         }
 
         public ReplayInfo Info { get; }
@@ -61,6 +64,7 @@ namespace UnrealReplayParser
             return new ChunkReader(new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
                 bIsLive, bCompressed, fileVersion), stream);
         }
+              
         /// <summary>
         /// Return <see cref="null"/> if it couldn't read the chunk length.
         /// </summary>
@@ -78,7 +82,7 @@ namespace UnrealReplayParser
             {
                 throw new EndOfStreamException("Need more bytes that what is available.");
             }
-            return new ChunkInfo(chunkType, sizeInBytes, new SubStream(_stream, sizeInBytes, true));
+            return new ChunkInfo(chunkType, sizeInBytes, _subStreamFactory.Create(sizeInBytes, true));
         }
 
         public void Dispose()
