@@ -27,7 +27,7 @@ namespace WebApp.Controllers
         [HttpPost("replay")]
         public async Task<IActionResult> ReplayUpload(IFormFile file)
         {
-            List<KillEventChunk> kills = new List<KillEventChunk>();
+            List<PlayerElimChunk> kills = new List<PlayerElimChunk>();
             ReplayInfo info;
             string hash;
             using (Stream replayStream = file.OpenReadStream())//TODO can timeout, BIGINT, check SQL types.
@@ -43,7 +43,7 @@ namespace WebApp.Controllers
                 {
                     using (chunk = await replay.ReadChunk())//TODO redo the loop, or abstract it.
                     {
-                        if (chunk is KillEventChunk killEvent) //TODO: throw if not disposed
+                        if (chunk is PlayerElimChunk killEvent) //TODO: throw if not disposed
                         {
                             kills.Add(killEvent);
                         }
@@ -53,7 +53,7 @@ namespace WebApp.Controllers
             }
 
             Kill[] killsCasted = kills.Select(chunk => new Kill(TimeSpan.FromMilliseconds(chunk.Time1), chunk.PlayerKilling,
-                chunk.PlayerKilled, (byte)chunk.Weapon, chunk.VictimState == KillEventChunk.State.KnockedDown)).ToArray();
+                chunk.PlayerKilled, (byte)chunk.Weapon, chunk.VictimState == PlayerElimChunk.State.KnockedDown)).ToArray();
             ReplayTable u = _stObjMap.StObjs.Obtain<ReplayTable>();
             using (var ctx = new SqlStandardCallContext())
             {

@@ -5,44 +5,46 @@ using Common.StreamHelpers;
 
 namespace UnrealReplayParser
 {
-    class UnrealReplayVisitor
+    public class UnrealReplayVisitor
     {
         const uint FileMagic = 0x1CA2E27F;
 
-        readonly Stream _stream;
+        protected readonly BinaryReaderAsync BinaryReader;
         readonly SubStreamFactory _subStreamFactory;
         public ReplayInfo Info { get; }
-        protected UnrealReplayVisitor(ReplayInfo info, Stream stream)
+        protected UnrealReplayVisitor(ReplayInfo info, BinaryReaderAsync binaryReader)
         {
             Info = info;
-            _stream = stream;
-            _subStreamFactory = new SubStreamFactory(stream);
+            BinaryReader = binaryReader;
+            _subStreamFactory = new SubStreamFactory(binaryReader.Stream);
         }
 
         public static async Task<UnrealReplayVisitor> FromStream(Stream stream)
         {
-            if (FileMagic != await stream.ReadUInt32())
+            BinaryReaderAsync binaryReader = new BinaryReaderAsync(stream);
+            if (FileMagic != await binaryReader.ReadUInt32())
             {
                 throw new InvalidDataException("Invalid file. Probably not an Unreal Replay.");
             }
-            uint fileVersion = await stream.ReadUInt32();
-            int lengthInMs = await stream.ReadInt32();
-            uint networkVersion = await stream.ReadUInt32();
-            uint changelist = await stream.ReadUInt32();
-            string friendlyName = await stream.ReadString();
-            bool bIsLive = await stream.ReadUInt32() != 0;
+            uint fileVersion = await binaryReader.ReadUInt32();
+            int lengthInMs = await binaryReader.ReadInt32();
+            uint networkVersion = await binaryReader.ReadUInt32();
+            uint changelist = await binaryReader.ReadUInt32();
+            string friendlyName = await binaryReader.ReadString();
+            bool bIsLive = await binaryReader.ReadUInt32() != 0;
             DateTime timestamp = DateTime.MinValue;
             if (fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
             {
-                timestamp = DateTime.FromBinary(await stream.ReadInt64());
+                timestamp = DateTime.FromBinary(await binaryReader.ReadInt64());
             }
             bool bCompressed = false;
             if (fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION)
             {
-                bCompressed = await stream.ReadUInt32() != 0;
+                bCompressed = await binaryReader.ReadUInt32() != 0;
             }
+            if (binaryReader.IsError) throw new InvalidDataException(binaryReader.ErrorMessage);
             return new UnrealReplayVisitor(new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
-                bIsLive, bCompressed, fileVersion), stream);
+                bIsLive, bCompressed, fileVersion), binaryReader);
         }
 
         public virtual async Task<bool> Visit()
@@ -53,11 +55,11 @@ namespace UnrealReplayParser
 
         public virtual async Task<bool> VisitChunk()
         {
-            (bool typeSuccess, uint chunkType) = await _stream.TryReadUInt32();
-            (bool sizeSuccess, int sizeInBytes) = await _stream.TryReadInt32();
-            if (!typeSuccess || !sizeSuccess)
+            uint chunkType = await BinaryReader.ReadUInt32();
+            int sizeInBytes= await BinaryReader.ReadInt32();
+            if (BinaryReader.IsError)
             {
-                VisitIncompleteChunk(typeSuccess, chunkType, sizeSuccess, sizeInBytes);
+                return await VisitIncompleteChunk(chunkType, sizeInBytes);
             }
             ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, await _subStreamFactory.Create(sizeInBytes, true));
             return (ChunkType)chunkType switch
@@ -79,7 +81,11 @@ namespace UnrealReplayParser
         {
             return Task.FromResult(false);
         }
-
+        /// <summary>
+        /// Simply return true and does nothing else.
+        /// </summary>
+        /// <param name="chunk"></param>
+        /// <returns></returns>
         public virtual Task<bool> VisitHeaderChunk(ChunkInfo chunk)
         {
             return Task.FromResult(true);
@@ -140,9 +146,9 @@ namespace UnrealReplayParser
             return Task.FromResult(true);
         }
 
-        public virtual bool VisitIncompleteChunk(bool readType, uint chunkType, bool readSize, int sizeInBytes)
+        public virtual Task<bool> VisitIncompleteChunk(uint chunkType, int sizeInBytes)
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 }
