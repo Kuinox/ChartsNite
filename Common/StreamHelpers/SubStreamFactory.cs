@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
+
 namespace Common.StreamHelpers
 {
     public class SubStreamFactory
     {
         readonly Stream _baseStream;
         SubStream? _previousSubStream;
-        static List<Stream> _factoryBaseStreams = new List<Stream>();
+        static readonly List<Stream> _factoryBaseStreams = new List<Stream>();
         /// <summary>
         /// There should be one, and only one <see cref="SubStreamFactory"/> per <see cref="Stream"/>.
         /// </summary>
@@ -30,15 +32,17 @@ namespace Common.StreamHelpers
         /// <param name="length"></param>
         /// <param name="leaveOpen"></param>
         /// <returns></returns>
-        public SubStream Create(long length, bool leaveOpen = false)
+        public async Task<SubStream> Create(long length, bool leaveOpen = false)
         {
-            if(!Interlocked.Exchange(ref _previousSubStream, new SubStream(_baseStream, length, leaveOpen))?.Disposed ?? false)
+            SubStream newSubStream = new SubStream(_baseStream, length, leaveOpen);
+            SubStream? previousSubStream = Interlocked.Exchange(ref _previousSubStream, newSubStream);//There should be no null after this.
+            if (previousSubStream == null) return newSubStream;//We can't return null.
+            if (!previousSubStream.Disposed)
             {
                 throw new InvalidOperationException("Dispose the precedent SubStream first. I won't do it for you.");
             }
-#pragma warning disable CS8603 // Possible null reference return.
-            return _previousSubStream;
-#pragma warning restore CS8603 // Possible null reference return.
+            await previousSubStream.DisposeAsync();
+            return newSubStream;
         }
     }
 }

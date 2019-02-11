@@ -8,6 +8,8 @@ namespace Common.StreamHelpers
 {
     public class SubStream : Stream
     {
+        bool _asyncDisposed;
+        readonly SemaphoreSlim _disposingSemaphore;
         readonly Stream _stream;
         readonly bool _leaveOpen;
         readonly long _startPosition;
@@ -22,6 +24,7 @@ namespace Common.StreamHelpers
         /// <param name="leaveOpen"></param>
         internal SubStream(Stream stream, long length, bool leaveOpen = false)
         {
+            _disposingSemaphore = new SemaphoreSlim(1);
             bool isLengthAvailable;
             try
             {
@@ -65,7 +68,7 @@ namespace Common.StreamHelpers
             int toRead = count;
             if (count + Position > Length)
             {
-                toRead = (int) (Length - Position);
+                toRead = (int)(Length - Position);
             }
             int read = _stream.Read(buffer, offset, toRead);
             _relativePosition += read;
@@ -79,7 +82,7 @@ namespace Common.StreamHelpers
             int toRead = count;
             if (count + Position > Length)
             {
-                toRead = (int) (Length - Position);
+                toRead = (int)(Length - Position);
             }
             int read = await _stream.ReadAsync(buffer, offset, toRead, cancellationToken);
             _relativePosition += read;
@@ -155,60 +158,46 @@ namespace Common.StreamHelpers
                 _stream.Position = value + _startPosition;
             }
         }
-
+        /// <summary>
+        /// Run a DisposeAsync, when completed the next call to<see cref="SubStreamFactory.Create(long, bool)"/> will return immediatly.
+        /// </summary>
+        /// <returns></returns>
         public async Task DisposeAsync()
         {
-            if (Disposed) return;
+            if (_asyncDisposed) return;//it mean we already "disposed" the stream, so we return this synchrounously
+            if (!_leaveOpen) return; //if we dispose parent stream there is no point to read the rest of the stream.
             CheckPositionUpperStream();
+            await _disposingSemaphore.WaitAsync();
+            if (_asyncDisposed) return;//we have awaited another Task that was "disposing"
+            _asyncDisposed = true;
             int toSkip = (int)(Length - Position);
             if (toSkip == 0) return;
             if (CanSeek)
             {
                 Seek(Length, SeekOrigin.Begin);
+                return;//yay ! we could do everything synchronously
             }
-            else
             if (CanRead)
             {
-                toSkip = (int)(Length - Position);
+                toSkip = (int)(Length - Position); //Read this first: https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
                 while (toSkip != 0)
                 {
                     int read = await ReadAsync(new byte[toSkip], 0, toSkip);
                     toSkip -= read;
-                    if (read == 0) throw new InvalidDataException("End of stream when i should have skipped data.");
+                    if (read == 0) throw new EndOfStreamException("Unexpected EOF.");
                 }
+                return;
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            throw new NotImplementedException();
         }
 
         public bool Disposed { get; private set; }
-
+        
         protected override void Dispose(bool disposing)
         {
             if (Disposed) return;
             CheckPositionUpperStream();
-            if (CanSeek)
-            {
-                Seek(Length, SeekOrigin.Begin);
-            }
-            else
-            if (CanRead)
-            {
-                int toSkip = (int)(Length - Position);
-                while (toSkip != 0)
-                {
-                    int read = Read(new byte[toSkip], 0, toSkip);
-                    toSkip -= read;
-                    if (read == 0) throw new InvalidDataException("End of stream when i should have skipped data.");
-                }
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-            Debug.Assert(Length == Position);
+            Task.Run(DisposeAsync);
             if (!_leaveOpen) _stream.Dispose();
             Disposed = true;
         }

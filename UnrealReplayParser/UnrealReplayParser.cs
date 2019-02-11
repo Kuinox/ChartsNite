@@ -78,7 +78,7 @@ namespace UnrealReplayParser
 
         public virtual async Task<ChunkInfo?> ReadChunk()
         {
-            (bool success, uint chunkType) = await _stream.TryReadUInt32(); //TODO WTF is happening here
+            (bool success, uint chunkType) = await _stream.TryReadUInt32();
             if (!success) return null;
             int sizeInBytes = await _stream.ReadInt32();
             if (sizeInBytes < 0)
@@ -89,7 +89,7 @@ namespace UnrealReplayParser
             {
                 throw new EndOfStreamException("Need more bytes that what is available.");
             }
-            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, _subStreamFactory.Create(sizeInBytes, true));
+            ChunkInfo chunk = new ChunkInfo(chunkType, sizeInBytes, await _subStreamFactory.Create(sizeInBytes, true));
             switch ((ChunkType)chunkType)
             {
                 case ChunkType.Header:
@@ -112,7 +112,7 @@ namespace UnrealReplayParser
                         uint time1 = await chunk.Stream.ReadUInt32();
                         uint time2 = await chunk.Stream.ReadUInt32();
                         int eventSizeInBytes = await chunk.Stream.ReadInt32();
-                        return new EventInfo(chunk, -1, id, group, metadata, time1, time2, eventSizeInBytes);
+                        return new EventInfo(chunk, id, group, metadata, time1, time2, eventSizeInBytes, chunkType == (uint)ChunkType.Checkpoint);
                     }
 
                 case ChunkType.ReplayData:

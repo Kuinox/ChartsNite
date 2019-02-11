@@ -11,6 +11,12 @@ namespace UnrealReplayParser
         public readonly uint Type;
         public readonly int SizeInBytes;
         public readonly Stream Stream;
+        /// <summary>
+        /// Hold information about the Chunk, please read <see cref="SubStream"/>
+        /// </summary>
+        /// <param name="chunkType"></param>
+        /// <param name="sizeInBytes"></param>
+        /// <param name="stream"></param>
         public ChunkInfo(uint chunkType, int sizeInBytes, SubStream stream)
         {
             Type = chunkType;
