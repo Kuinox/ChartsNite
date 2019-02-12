@@ -4,7 +4,7 @@ using System.Text;
 
 namespace FortniteReplayParser.Chunk
 {
-    class FortniteHeaderChunk
+    public class FortniteHeaderChunk
     {
         public readonly uint Version;
         public readonly string Release;

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using UnrealReplayParser;
 
-namespace UnrealReplayParser
+namespace UnrealReplayParser.Chunk
 {
     public class ReplayDataInfo : ChunkInfo
     {

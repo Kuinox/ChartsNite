@@ -9,12 +9,13 @@ namespace Common.StreamHelpers
     public class SubStream : Stream
     {
         bool _asyncDisposed;
-        readonly SemaphoreSlim _disposingSemaphore;
+        readonly SemaphoreSlim _disposingOrCheckingSemaphore;
         readonly Stream _stream;
         readonly bool _leaveOpen;
         readonly long _startPosition;
         readonly long _maxPosition;
         readonly bool _isPositionAvailable;
+        bool _dontFlush;
         long _relativePosition;
         /// <summary>
         /// Please read the stream to end or use <see cref="DisposeAsync"/> if you want to be fully <see langword="async"/>.
@@ -24,7 +25,7 @@ namespace Common.StreamHelpers
         /// <param name="leaveOpen"></param>
         internal SubStream(Stream stream, long length, bool leaveOpen = false)
         {
-            _disposingSemaphore = new SemaphoreSlim(1);
+            _disposingOrCheckingSemaphore = new SemaphoreSlim(1);
             bool isLengthAvailable;
             try
             {
@@ -51,20 +52,28 @@ namespace Common.StreamHelpers
             if (!_isPositionAvailable) return;
             _startPosition = stream.Position;
             _maxPosition = _startPosition + length;
-            CheckPositionUpperStream();
+            Checks();
         }
+        /// <summary>
+        /// Notify to skip all the remaining bytes when Disposing.
+        /// </summary>
+        public void CancelFlush() => _dontFlush = true;
 
         public override void Flush()
         {
-            if (Disposed) throw new ObjectDisposedException(GetType().Name);
-            CheckPositionUpperStream();
+            Checks();
             _stream.Flush();
         }
 
+        #region Reads    
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (Disposed) throw new ObjectDisposedException(GetType().Name);
-            CheckPositionUpperStream();
+            Checks();
+            return ReadWithoutChecks(buffer, offset, count);
+        }
+
+        int ReadWithoutChecks(byte[] buffer, int offset, int count)
+        {
             int toRead = count;
             if (count + Position > Length)
             {
@@ -75,10 +84,14 @@ namespace Common.StreamHelpers
             return read;
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (Disposed) throw new ObjectDisposedException(GetType().Name);
-            CheckPositionUpperStream();
+            Checks();
+            return ReadWithoutChecksAsync(buffer, offset, count, cancellationToken);
+        }
+
+        async Task<int> ReadWithoutChecksAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
             int toRead = count;
             if (count + Position > Length)
             {
@@ -87,13 +100,17 @@ namespace Common.StreamHelpers
             int read = await _stream.ReadAsync(buffer, offset, toRead, cancellationToken);
             _relativePosition += read;
             return read;
+        }
+        #endregion Reads
 
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            Checks();
+            return SeekWithoutChecks(offset, origin);
         }
 
-        public override long Seek(long offset, SeekOrigin origin)//TODO change seek long returned based on substream
+        long SeekWithoutChecks(long offset, SeekOrigin origin)
         {
-            if (Disposed) throw new ObjectDisposedException(GetType().Name);
-            CheckPositionUpperStream();
             long pos;
             switch (origin)
             {
@@ -117,6 +134,7 @@ namespace Common.StreamHelpers
             }
         }
 
+
         public override void SetLength(long value)
         {
             throw new NotSupportedException();
@@ -124,8 +142,7 @@ namespace Common.StreamHelpers
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (Disposed) throw new ObjectDisposedException(GetType().Name);
-            if (_isPositionAvailable && Position + count > Length) throw new InvalidOperationException();
+            Checks();
             _stream.Write(buffer, offset, count);
             _relativePosition += count;
         }
@@ -138,23 +155,27 @@ namespace Common.StreamHelpers
 
         public override long Length { get; }
 
-        void CheckPositionUpperStream()
+        /// <summary>
+        /// Check if the BaseStream position without calling the SubStream. Work only if you provied a Stream where we can get the Position
+        /// </summary>
+        /// <param name="ignoreDispose"></param>
+        void Checks(bool ignoreDispose = false)
         {
-            if (_isPositionAvailable && _startPosition + _relativePosition != _stream.Position) throw new InvalidOperationException("Upper stream Position changed");
+            if (!ignoreDispose && Disposed) throw new ObjectDisposedException(GetType().Name);
+            if (!ignoreDispose && _asyncDisposed) throw new ObjectDisposedException(GetType().Name);
+            if ( _isPositionAvailable && _startPosition + _relativePosition != _stream.Position) throw new InvalidOperationException("Upper stream Position changed");
         }
 
         public override long Position
         {
             get
             {
-                if (Disposed) throw new ObjectDisposedException(GetType().Name);
-                CheckPositionUpperStream();
+                Checks();
                 return _relativePosition;
             }
             set
             {
-                if (Disposed) throw new ObjectDisposedException(GetType().Name);
-                CheckPositionUpperStream();
+                Checks();
                 _stream.Position = value + _startPosition;
             }
         }
@@ -164,42 +185,49 @@ namespace Common.StreamHelpers
         /// <returns></returns>
         public async Task DisposeAsync()
         {
-            if (_asyncDisposed) return;//it mean we already "disposed" the stream, so we return this synchrounously
+            if (!Disposed) throw new InvalidOperationException("Dispose should had be called");
+            if (_asyncDisposed || _dontFlush) return;//it mean we already "disposed" the stream, so we return this synchrounously
             if (!_leaveOpen) return; //if we dispose parent stream there is no point to read the rest of the stream.
-            CheckPositionUpperStream();
-            await _disposingSemaphore.WaitAsync();
-            if (_asyncDisposed) return;//we have awaited another Task that was "disposing"
-            _asyncDisposed = true;
-            int toSkip = (int)(Length - Position);
-            if (toSkip == 0) return;
-            if (CanSeek)
-            {
-                Seek(Length, SeekOrigin.Begin);
-                return;//yay ! we could do everything synchronously
-            }
-            if (CanRead)
-            {
-                toSkip = (int)(Length - Position); //Read this first: https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
-                while (toSkip != 0)
-                {
-                    int read = await ReadAsync(new byte[toSkip], 0, toSkip);
-                    toSkip -= read;
-                    if (read == 0) throw new EndOfStreamException("Unexpected EOF.");
-                }
+            if (!CanRead && !CanSeek) throw new NotImplementedException(); // we can't do this. so we throw an exception synchronously
+            await _disposingOrCheckingSemaphore.WaitAsync();
+            int toSkip = (int)(Length - _relativePosition);
+            if (toSkip == 0 || _asyncDisposed) { //we have nothing to skip, or we have awaited another Task that was "disposing"
+                SafeExit();
                 return;
             }
-            throw new NotImplementedException();
+            if (CanSeek)
+            {
+                SeekWithoutChecks(Length, SeekOrigin.Begin);
+                SafeExit();
+                return;//yay ! we could do everything synchronously
+            }
+            toSkip = (int)(Length - Position); //Read this first: https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
+            while (toSkip != 0)
+            {
+                int read = await ReadWithoutChecksAsync(new byte[toSkip], 0, toSkip, default);
+                toSkip -= read;
+                if (read == 0) throw new EndOfStreamException("Unexpected End of Stream.");
+            }
+            SafeExit();
+
+            void SafeExit()
+            {
+                _asyncDisposed = true;
+                _disposingOrCheckingSemaphore.Release();
+            }
+
         }
 
         public bool Disposed { get; private set; }
-        
+
         protected override void Dispose(bool disposing)
         {
             if (Disposed) return;
-            CheckPositionUpperStream();
+            Checks();
+            Disposed = true;
             Task.Run(DisposeAsync);
             if (!_leaveOpen) _stream.Dispose();
-            Disposed = true;
+            
         }
     }
 }

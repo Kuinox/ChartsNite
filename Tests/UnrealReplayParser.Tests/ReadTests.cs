@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using ChartsNite.TestHelper;
+using Common.StreamHelpers;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace UnrealReplayParser.Tests
@@ -11,19 +13,11 @@ namespace UnrealReplayParser.Tests
         [Test, TestCaseSource(typeof(ReplayFetcher), nameof(ReplayFetcher.GetAllReplaysStreams))]
         public async Task CanReadWithoutException(string replayPath)
         {
-            using (FileStream replayStream = File.OpenRead(replayPath))
-            using (UnrealReplayParser unrealParser = await UnrealReplayParser.FromStream(replayStream))
+            using (Stream replayStream = new DebugStream(File.OpenRead(replayPath)))
+            using(SubStreamFactory factory = new SubStreamFactory(replayStream))
+            using (UnrealReplayVisitor unrealVisitor = await UnrealReplayVisitor.FromStream(factory))
             {
-                {
-                    while (true)
-                    {
-                        using (ChunkInfo? chunkInfo = await unrealParser.ReadChunk())
-                        {
-                            if (chunkInfo == null) break;
-                            await chunkInfo.Stream.ReadAsync(new byte[chunkInfo.SizeInBytes], 0, chunkInfo.SizeInBytes);
-                        }
-                    }
-                }
+                (await unrealVisitor.Visit()).Should().Be(true);
             }
         }
     }

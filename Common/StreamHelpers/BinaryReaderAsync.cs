@@ -10,11 +10,13 @@ namespace Common.StreamHelpers
     public class BinaryReaderAsync : IDisposable
     {
         public readonly Stream Stream;
+        readonly bool _leaveOpen;
         string? _errorDescription;
         bool _fatal;
-        public BinaryReaderAsync(Stream stream)
+        public BinaryReaderAsync(Stream stream, bool leaveOpen = false)
         {
             Stream = stream;
+            _leaveOpen = leaveOpen;
         }
 
         public bool IsError => !string.IsNullOrWhiteSpace(_errorDescription) || _fatal;
@@ -98,6 +100,11 @@ namespace Common.StreamHelpers
         public async Task<string> ReadString()
         {
             int length = await ReadInt32();
+            if (length > Stream.Length + Stream.Position || length<0 && -length > Stream.Length + Stream.Position)
+            {
+                AddError("The size of the string was bigger than the stream. Probably not a string.");
+                return "";
+            }
             if (length == 0) return "";
             bool isUnicode = length < 0;
             byte[] data;
@@ -118,7 +125,10 @@ namespace Common.StreamHelpers
 
         public void Dispose()
         {
-            Stream.Dispose();
+            if(!_leaveOpen)
+            {
+                Stream.Dispose();
+            }
         }
         #endregion ReadString
     }

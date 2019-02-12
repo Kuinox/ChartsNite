@@ -5,6 +5,9 @@ using ChartsNite.TestHelper;
 using NUnit.Framework;
 using UnrealReplayParser;
 using FortniteReplayParser;
+using FluentAssertions;
+using Common.StreamHelpers;
+
 namespace FortniteReplayParser.Tests
 {
     [TestFixture]
@@ -14,18 +17,10 @@ namespace FortniteReplayParser.Tests
         public async Task CanReadWithoutException(string replayPath)
         {
             using (FileStream replayStream = File.OpenRead(replayPath))
-            using(FortniteReplayParser fortniteParser = new FortniteReplayParser(await UnrealReplayParser.UnrealReplayParser.FromStream(replayStream)))
+            using (SubStreamFactory factory = new SubStreamFactory(replayStream))
+            using (FortniteReplayVisitor fortniteVisitor = await FortniteReplayVisitor.FortniteVisitorFromStream(factory))
             {
-                {
-                    while (true)
-                    {
-                        using (ChunkInfo? chunkInfo = await fortniteParser.ReadChunk())
-                        {
-                            if (chunkInfo == null) break;
-                            await chunkInfo.Stream.ReadAsync(new byte[chunkInfo.SizeInBytes], 0, chunkInfo.SizeInBytes);
-                        }
-                    }
-                }
+                (await fortniteVisitor.Visit()).Should().Be(true);
             }
         }
     }

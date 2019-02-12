@@ -6,18 +6,23 @@ using System.Threading.Tasks;
 
 namespace Common.StreamHelpers
 {
-    public class SubStreamFactory
+    public class SubStreamFactory : IDisposable
     {
-        readonly Stream _baseStream;
+        private readonly Stream _baseStream;
         SubStream? _previousSubStream;
         static readonly List<Stream> _factoryBaseStreams = new List<Stream>();
+        /// <summary>
+        /// WARNING. If you change the position while a SubStream, everything will burn, and your computer will try to kill you.
+        /// </summary>
+        public Stream BaseStream => _baseStream;
+
         /// <summary>
         /// There should be one, and only one <see cref="SubStreamFactory"/> per <see cref="Stream"/>.
         /// </summary>
         /// <param name="baseStream"></param>
         public SubStreamFactory(Stream baseStream)
         {
-            if(_factoryBaseStreams.Contains(baseStream))
+            if (_factoryBaseStreams.Contains(baseStream))
             {
                 throw new InvalidOperationException("Cannot create two Factory for the same base Stream. You should not do that.");
             }
@@ -34,15 +39,21 @@ namespace Common.StreamHelpers
         /// <returns></returns>
         public async Task<SubStream> Create(long length, bool leaveOpen = false)
         {
-            SubStream newSubStream = new SubStream(_baseStream, length, leaveOpen);
-            SubStream? previousSubStream = Interlocked.Exchange(ref _previousSubStream, newSubStream);//There should be no null after this.
-            if (previousSubStream == null) return newSubStream;//We can't return null.
-            if (!previousSubStream.Disposed)
+            if (_previousSubStream != null)
             {
-                throw new InvalidOperationException("Dispose the precedent SubStream first. I won't do it for you.");
+                if (!_previousSubStream.Disposed)
+                {
+                    throw new InvalidOperationException("Dispose the precedent SubStream first. I won't do it for you.");
+                }
+                await _previousSubStream.DisposeAsync();
             }
-            await previousSubStream.DisposeAsync();
-            return newSubStream;
+            _previousSubStream = new SubStream(BaseStream, length, leaveOpen);
+            return _previousSubStream;
+        }
+
+        public void Dispose()
+        {
+            BaseStream.Dispose();
         }
     }
 }

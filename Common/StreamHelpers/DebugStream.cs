@@ -21,9 +21,7 @@ namespace Common.StreamHelpers
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int readed =  _streamToDebug.Read(buffer, offset, count);
-            Console.WriteLine("DebugStream: "+Position);
-            return readed;
+            return _streamToDebug.Read(buffer, offset, count);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -53,6 +51,10 @@ namespace Common.StreamHelpers
         {
             get => _streamToDebug.Position;
             set => _streamToDebug.Position = value;
+        }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
         }
     }
 }
