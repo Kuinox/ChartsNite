@@ -17,10 +17,10 @@
     <PackageReference Include="nunit" Version="3.11.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+    <PackageReference Include="NSubstitute" Version="4.0.0" />
   </ItemGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\..\ChartsNite.TestHelper\ChartsNite.TestHelper.csproj" />
+    <ProjectReference Include="..\ChartsNite.TestHelper\ChartsNite.TestHelper.csproj" />
     <ProjectReference Include="..\..\FortniteReplayParser\FortniteReplayParser.csproj" />
     <ProjectReference Include="..\..\UnrealReplayParser\UnrealReplayParser.csproj" />
   </ItemGroup>

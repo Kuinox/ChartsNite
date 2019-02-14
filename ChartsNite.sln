@@ -26,11 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.Data.Tests", "Te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FortniteReplayParser.Tests", "Tests\FortniteReplayParser.Tests\FortniteReplayParser.Tests.csproj", "{25D035F4-58C8-4A13-AC72-496B185F3E15}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnrealReplayParser.Tests", "Tests\UnrealReplayParser.Tests\UnrealReplayParser.Tests.csproj", "{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.TestHelper", "ChartsNite.TestHelper\ChartsNite.TestHelper.csproj", "{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.ReplayOrganizer", "ChartsNite.ReplayOrganizer\ChartsNite.ReplayOrganizer.csproj", "{4344C4DF-5800-428E-ABDA-D1859EC618DB}"
 EndProject
@@ -64,18 +60,10 @@ Global
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{25D035F4-58C8-4A13-AC72-496B185F3E15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{25D035F4-58C8-4A13-AC72-496B185F3E15}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{25D035F4-58C8-4A13-AC72-496B185F3E15}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{25D035F4-58C8-4A13-AC72-496B185F3E15}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -86,9 +74,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{63CC7ECB-96C8-4798-AB10-08232D9D25A9} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
-		{25D035F4-58C8-4A13-AC72-496B185F3E15} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
-		{4B5A3B49-C6A1-4CA2-94E1-22FD6A85B4B2} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {388BDD38-DF1F-46A1-9358-B6E565FB7D9E}

@@ -134,14 +134,14 @@ namespace UnrealReplayParser
             using (SubStream subStream = await SubStreamFactory.Create(chunk.SizeInBytes, true))
             using (BinaryReaderAsync binaryReader = new BinaryReaderAsync(subStream))
             {
-                return chunk.ChunkType switch
+                return !(chunk.ChunkType switch
                 {
                     ChunkType.Header => await ParseHeaderChunk(replayInfo, binaryReader, chunk),
                     ChunkType.Checkpoint => await ParseEventChunkHeader(replayInfo, binaryReader, chunk, true),
                     ChunkType.Event => await ParseEventChunkHeader(replayInfo, binaryReader, chunk, false),
                     ChunkType.ReplayData => await ParseReplayDataChunkHeader(replayInfo, binaryReader, chunk),
                     _ => throw new InvalidOperationException("Invalid ChunkType")
-                };
+                }) ? await VisitChunkContentParsingError() : true;
             }
         }
         #region ChunkHeaderErrorHandling
@@ -203,6 +203,16 @@ namespace UnrealReplayParser
             int eventSizeInBytes = await binaryReader.ReadInt32();
             return !binaryReader.IsError && await ChooseEventChunkType(replayInfo, binaryReader, new EventInfo(chunk, id, group, metadata, time1, time2, eventSizeInBytes, isCheckpoint));
         }
+
+        /// <summary>
+        /// Error inside chunk content parsing
+        /// </summary>
+        /// <returns></returns>
+        public virtual Task<bool> VisitChunkContentParsingError()
+        {
+            return Task.FromResult(true);
+        }
+
 
         /// <summary>
         /// We do nothing there

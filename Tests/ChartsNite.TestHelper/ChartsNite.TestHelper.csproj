@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
 
     <NullableContextOptions>enable</NullableContextOptions>
@@ -11,5 +11,11 @@
     
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FortniteReplayParser\FortniteReplayParser.csproj" />
+    <ProjectReference Include="..\..\UnrealReplayParser\UnrealReplayParser.csproj" />
+  </ItemGroup>
 
 </Project>
