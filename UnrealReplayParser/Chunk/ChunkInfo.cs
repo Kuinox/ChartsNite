@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Common.StreamHelpers;
+using UnrealReplayParser.Chunk;
 
 namespace UnrealReplayParser
 {
     public class ChunkInfo
     {
-        public readonly uint Type;
+        public readonly ChunkType ChunkType;
         public readonly int SizeInBytes;
         /// <summary>
         /// Hold information about the Chunk, please read <see cref="SubStream"/>
@@ -16,15 +17,15 @@ namespace UnrealReplayParser
         /// <param name="chunkType"></param>
         /// <param name="sizeInBytes"></param>
         /// <param name="stream"></param>
-        public ChunkInfo(uint chunkType, int sizeInBytes)
+        public ChunkInfo(ChunkType chunkType, int sizeInBytes)
         {
-            Type = chunkType;
+            ChunkType = chunkType;
             SizeInBytes = sizeInBytes;
         }
 
         protected ChunkInfo(ChunkInfo info)
         {
-            Type = info.Type;
+            ChunkType = info.ChunkType;
             SizeInBytes = info.SizeInBytes;
         }
     }

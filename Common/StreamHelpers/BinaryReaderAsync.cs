@@ -11,24 +11,27 @@ namespace Common.StreamHelpers
     {
         public readonly Stream Stream;
         readonly bool _leaveOpen;
+        private readonly Func<Task>? _errorFunc;
         string? _errorDescription;
         bool _fatal;
-        public BinaryReaderAsync(Stream stream, bool leaveOpen = false)
+        public BinaryReaderAsync(Stream stream, bool leaveOpen = false, Func<Task>? errorAction = null)
         {
             Stream = stream;
             _leaveOpen = leaveOpen;
+            _errorFunc = errorAction;
         }
 
         public bool IsError => !string.IsNullOrWhiteSpace(_errorDescription) || _fatal;
 
         public bool Fatal => _fatal;
         public string? ErrorMessage => _errorDescription;
-
+        public bool EndOfStream { get; private set; }
         public void SetFatal()
         {
             _fatal = true;
         }
-        // <summary>
+
+        /// <summary>
         /// Adds an error (the message starts with the caller's method name) to the existing ones (if any).
         /// </summary>
         /// <param name="expectedMessage">
@@ -39,9 +42,15 @@ namespace Common.StreamHelpers
         /// false to append it (as a cause: [previous] &lt;-- [added])</param>
         /// <param name="callerName">Name of the caller (automatically injected by the compiler).</param>
         /// <returns>Always false to use it as the return statement in a match method.</returns>
-        public bool AddError(object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null)
+        public async Task<bool> AddError(object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null)
         {
-            if (fatal) SetFatal();
+            if(_errorFunc != null)
+            {
+                await _errorFunc();
+            }
+            if (fatal) {
+                SetFatal();
+            }
             if (_errorDescription != null)
             {
                 if (beforeExisting)
@@ -80,7 +89,8 @@ namespace Common.StreamHelpers
                 int read = await Stream.ReadAsync(buffer, count - toRead, count);
                 if (read == 0)
                 {
-                    AddError("No more bytes to read", true, true);
+                    EndOfStream = true;
+                    await AddError("No more bytes to read", true, true);
                     break;
                 }
                 toRead -= read;
@@ -102,7 +112,7 @@ namespace Common.StreamHelpers
             int length = await ReadInt32();
             if (length > Stream.Length + Stream.Position || length<0 && -length > Stream.Length + Stream.Position)
             {
-                AddError("The size of the string was bigger than the stream. Probably not a string.");
+                await AddError("The size of the string was bigger than the stream. Probably not a string.");
                 return "";
             }
             if (length == 0) return "";

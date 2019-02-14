@@ -9,7 +9,7 @@ namespace UnrealReplayParser.Chunk
         public readonly int ReplayDataSizeInBytes;
         public ReplayDataInfo(uint time1, uint time2, int replayDataSizeInBytes, ChunkInfo info) : base(info)
         {
-            if(info.Type != (int)ChunkType.ReplayData) throw new InvalidOperationException();
+            if(info.ChunkType != ChunkType.ReplayData) throw new InvalidOperationException();
             Time1 = time1;
             Time2 = time2;
             ReplayDataSizeInBytes = replayDataSizeInBytes;

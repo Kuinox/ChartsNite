@@ -10,16 +10,12 @@ namespace FortniteReplayParser
 {
     public class FortniteReplayVisitor : UnrealReplayVisitor
     {
-        protected FortniteReplayVisitor(ReplayInfo info, SubStreamFactory subStreamFactory) : base(info, subStreamFactory)
+        public FortniteReplayVisitor(SubStreamFactory subStreamFactory) : base(subStreamFactory)
         {
         }
 
-        public static async Task<FortniteReplayVisitor> FortniteVisitorFromStream(SubStreamFactory subStreamFactory)
-        {
-            return new FortniteReplayVisitor((await FromStream(subStreamFactory)).Info, subStreamFactory);
-        }
 
-        public override Task<bool> VisitEventChunkContent(BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        public override Task<bool> ChooseEventChunkType(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
         {
             return eventInfo.Group switch
             {
@@ -62,7 +58,7 @@ namespace FortniteReplayParser
             return Task.FromResult(true);
         }
 
-        public override async Task<bool> VisitHeaderChunk(BinaryReaderAsync binaryReader, ChunkInfo chunk)
+        public override async Task<bool> ParseHeaderChunk(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, ChunkInfo chunk)
         {
             uint fortniteMagicNumber = await binaryReader.ReadUInt32();//this is an attempt and shouldnt be read as fact but an attempt to known what is the data behind.
             if (fortniteMagicNumber != 754295101)
@@ -107,9 +103,9 @@ namespace FortniteReplayParser
             return Task.FromResult(true);
         }
 
-        public override Task<bool> VisitReplayDataChunkContent(BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo)
+        public override Task<bool> ParseReplayDataChunkContent(BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo)
         {
-            return base.VisitReplayDataChunkContent(binaryReader, replayDataInfo);
+            return base.ParseReplayDataChunkContent(binaryReader, replayDataInfo);
         }
     }
 }

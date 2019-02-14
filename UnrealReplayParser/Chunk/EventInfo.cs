@@ -15,7 +15,7 @@ namespace UnrealReplayParser
 
         public EventInfo(ChunkInfo info, string id, string group, string metadata, uint time1, uint time2, int eventSizeInBytes, bool isCheckpoint) : base(info)
         {
-            if(info.Type != (int)ChunkType.Event && info.Type != (int)ChunkType.Checkpoint) throw new InvalidOperationException();
+            if(info.ChunkType != ChunkType.Event && info.ChunkType != ChunkType.Checkpoint) throw new InvalidOperationException();
             Id = id;
             Group = group;
             Metadata = metadata;
