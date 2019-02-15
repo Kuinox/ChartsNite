@@ -22,10 +22,30 @@ namespace FortniteReplayParser
                 "playerElim" => VisitPlayerElimChunk(binaryReader, eventInfo),
                 "AthenaMatchStats" => VisitAthenaMatchStats(eventInfo),
                 "AthenaMatchTeamStats" => VisitAthenaMatchTeamStats(eventInfo),
+                "AthenaReplayBrowserEvents" => VisitAthenaReplayBrowserEvents(replayInfo, binaryReader, eventInfo),
                 "checkpoint" => VisitCheckPoint(eventInfo),
-                _ => Task.FromResult(false)
+                "PlayerStateEncryptionKey" => VisitPlayerStateEncryptionKey(replayInfo, binaryReader, eventInfo),
+                "fortBenchEvent" => VisitFortBenchEvent(replayInfo, binaryReader, eventInfo),
+                _ => VisitUnknowEventChunkType(replayInfo, binaryReader, eventInfo)
             };
         }
+        public virtual Task<bool> VisitFortBenchEvent(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        {
+            return Task.FromResult(true);
+        }
+        public virtual Task<bool> VisitPlayerStateEncryptionKey(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        {
+            return Task.FromResult(true);
+        }
+        public virtual Task<bool> VisitAthenaReplayBrowserEvents(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        {
+            return Task.FromResult(true);
+        }
+        public virtual Task<bool> VisitUnknowEventChunkType(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        {
+            return Task.FromResult(false);
+        }
+
         public virtual Task<bool> VisitCheckPoint(EventInfo eventInfo)
         {
             return Task.FromResult(true);
