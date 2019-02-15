@@ -26,15 +26,14 @@ namespace UnrealReplayParser.Tests
         //    }
         //}
 
-        public static IEnumerable<(Type, string)> ParserProvider() => new ReplayFetcher().GetAllReplaysStreams();
+        public static IEnumerable<(Type, string)> ParserProvider() => new ReplayFetcher().GetAllReplaysStreamsWithAllParsers();
 
         [Test, TestCaseSource(nameof(ParserProvider))]
         public async Task NoErrorWhileReading((Type,string) tuple)
         {
             var substituteOfType = typeof(Substitute).GetMethod(nameof(Substitute.ForPartsOf)).MakeGenericMethod(tuple.Item1);
             using (Stream replayStream = new DebugStream(File.OpenRead(tuple.Item2)))
-            using (SubStreamFactory factory = new SubStreamFactory(replayStream))
-            using (UnrealReplayVisitor unrealVisitor = (UnrealReplayVisitor)substituteOfType.Invoke(null, new[] { new object[] { factory } }))
+            using (UnrealReplayVisitor unrealVisitor = (UnrealReplayVisitor)substituteOfType.Invoke(null, new[] { new object[] { replayStream } }))
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
                 await unrealVisitor.DidNotReceiveWithAnyArgs().VisitChunkContentParsingError();

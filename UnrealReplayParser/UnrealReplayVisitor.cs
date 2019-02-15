@@ -19,10 +19,11 @@ namespace UnrealReplayParser
         const uint FileMagic = 0x1CA2E27F;
 
         protected readonly SubStreamFactory SubStreamFactory;
-        public UnrealReplayVisitor(SubStreamFactory subStreamFactory)
+        public UnrealReplayVisitor(Stream stream)
         {
-            SubStreamFactory = subStreamFactory;
+            SubStreamFactory = new SubStreamFactory(stream);
         }
+
         #region ReplayHeaderParsing
         public async Task<bool> Visit()
         {

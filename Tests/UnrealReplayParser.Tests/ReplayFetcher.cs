@@ -7,7 +7,7 @@ namespace UnrealReplayParser.Tests
 {
     public class ReplayFetcher
     {
-        public IEnumerable<(Type, string)> GetAllReplaysStreams() 
+        public IEnumerable<string> GetAllReplaysPath()
         {
             string path = Directory.GetCurrentDirectory();
             while (!Directory.Exists(path + Path.DirectorySeparatorChar + "Replays"))
@@ -15,10 +15,12 @@ namespace UnrealReplayParser.Tests
                 path = Directory.GetParent(path).FullName;
             }
             path += Path.DirectorySeparatorChar + "Replays";
-            string[] paths = Directory.GetFiles(path, "*.replay");
-
+           return Directory.GetFiles(path, "*.replay");
+        }
+        public IEnumerable<(Type, string)> GetAllReplaysStreamsWithAllParsers() 
+        {
             return from x in ParserToTest()
-                   from y in paths
+                   from y in GetAllReplaysPath()
                    select (x, y);
         }
 

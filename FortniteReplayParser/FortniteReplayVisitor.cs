@@ -10,8 +10,9 @@ namespace FortniteReplayParser
 {
     public class FortniteReplayVisitor : UnrealReplayVisitor
     {
-        public FortniteReplayVisitor(SubStreamFactory subStreamFactory) : base(subStreamFactory)
+        public FortniteReplayVisitor(Stream stream) : base(stream)
         {
+
         }
 
 
