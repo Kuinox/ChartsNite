@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,12 +7,27 @@ namespace UnrealReplayParser
     public class ReplayInfo
     {
         public readonly int LengthInMs;
+        /// <summary>
+        /// Always 2
+        /// </summary>
         public readonly uint NetworkVersion;
+        /// <summary>
+        /// moved from 3 to 5
+        /// </summary>
         public readonly uint Changelist;
         public readonly string FriendlyName;
         public readonly DateTime Timestamp;
+        /// <summary>
+        /// Not used !
+        /// </summary>
         public readonly long TotalDataSizeInBytes;
+        /// <summary>
+        /// Actually used
+        /// </summary>
         public readonly bool BIsLive;
+        /// <summary>
+        /// Always true on Fortnite replay
+        /// </summary>
         public readonly bool BCompressed;
         /// <summary>
         /// This is <see cref="null"/> until the <see cref="ChunkParser"/> have read the Header Chunk

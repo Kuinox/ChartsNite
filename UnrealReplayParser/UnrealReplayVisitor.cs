@@ -25,7 +25,7 @@ namespace UnrealReplayParser
         }
 
         #region ReplayHeaderParsing
-        public async Task<bool> Visit()
+        public virtual async Task<bool> Visit()
         {
             bool noErrorOrRecovered = true;
             using (BinaryReaderAsync binaryReader = new BinaryReaderAsync(SubStreamFactory.BaseStream, true, async () =>
@@ -50,27 +50,33 @@ namespace UnrealReplayParser
                 {
                     bCompressed = await binaryReader.ReadUInt32() != 0;
                 }
-                return noErrorOrRecovered && await VisitReplayChunks(new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
-                bIsLive, bCompressed, fileVersion));
+                var replayInfo = new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
+                bIsLive, bCompressed, fileVersion);
+                return noErrorOrRecovered && await VisitReplayInfo(replayInfo) && await VisitReplayChunks(replayInfo);
             }
         }
         /// <summary>
         /// Error occured while parsing the header.
         /// </summary>
         /// <returns></returns>
-        public Task<bool> VisitReplayHeaderParsingError()
+        public virtual Task<bool> VisitReplayHeaderParsingError()
         {
             return Task.FromResult(false);
         }
 
 
-        public Task<bool> VisitBadReplayHeader()
+        public virtual Task<bool> VisitBadReplayHeader()
         {
             return Task.FromResult(false);
+        }
+
+        public virtual Task<bool> VisitReplayInfo(ReplayInfo replayInfo)
+        {
+            return Task.FromResult(true);
         }
 
         #region MagicNumber
-        public async Task<bool> ParseMagicNumber(BinaryReaderAsync binaryReader)
+        public virtual async Task<bool> ParseMagicNumber(BinaryReaderAsync binaryReader)
         {
             return await VisitMagicNumber(await binaryReader.ReadUInt32());
         }
@@ -79,7 +85,7 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="magicNumber"></param>
         /// <returns><see langword="true"/> if the magic number is correct.</returns>
-        public Task<bool> VisitMagicNumber(uint magicNumber)
+        public virtual Task<bool> VisitMagicNumber(uint magicNumber)
         {
             return Task.FromResult(magicNumber == FileMagic);
         }
