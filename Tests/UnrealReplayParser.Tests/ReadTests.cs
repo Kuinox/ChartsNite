@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -8,6 +8,8 @@ using NSubstitute;
 using NUnit.Framework;
 using FortniteReplayParser;
 using System.Linq;
+using UnrealReplayParser.Chunk;
+
 namespace UnrealReplayParser.Tests
 {
     [TestFixture]
@@ -37,7 +39,7 @@ namespace UnrealReplayParser.Tests
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
                 await unrealVisitor.DidNotReceiveWithAnyArgs().VisitChunkContentParsingError();
-                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ReplayInfo>(), Arg.Any<ChunkInfo>());
+                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ReplayInfo>(), Arg.Any<ChunkType>(), Arg.Any<int>());
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -26,6 +26,11 @@ namespace Common.StreamHelpers
         public bool Fatal => _fatal;
         public string? ErrorMessage => _errorDescription;
         public bool EndOfStream { get; private set; }
+
+        public bool AssertRemainingCountOfBytes(int length)
+        {
+            return Stream.Length - Stream.Position == length;
+        }
         public void SetFatal()
         {
             _fatal = true;
@@ -62,7 +67,10 @@ namespace Common.StreamHelpers
                     _errorDescription = _errorDescription + Environment.NewLine + "<-- " + FormatMessage(errorMessage, callerName);
                 }
             }
-            else _errorDescription = FormatMessage(errorMessage, callerName);
+            else
+            {
+                _errorDescription = FormatMessage(errorMessage, callerName);
+            }
             return false;
         }
         static string? FormatMessage(object? expectedMessage, string? callerName)
@@ -115,7 +123,11 @@ namespace Common.StreamHelpers
                 await AddError("The size of the string was bigger than the stream. Probably not a string.");
                 return "";
             }
-            if (length == 0) return "";
+            if (length == 0)
+            {
+                return "";
+            }
+
             bool isUnicode = length < 0;
             byte[] data;
             string value;

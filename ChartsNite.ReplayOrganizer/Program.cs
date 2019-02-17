@@ -1,5 +1,6 @@
 using Common.StreamHelpers;
 using FortniteReplayParser;
+using FortniteReplayParser.Chunk;
 using OfficeOpenXml;
 using System;
 using System.IO;
@@ -26,6 +27,7 @@ namespace ChartsNite.ReplayOrganizer
                         if( fortniteDataGrabber.ReplayInfo == null )
                         {
                             dataDumper.DumpValue( "ReplayInfo is NULL." );
+                            dataDumper.ReturnToNewRow();
                             continue;
                         }
                         ReplayInfo info = fortniteDataGrabber.ReplayInfo;
@@ -38,6 +40,29 @@ namespace ChartsNite.ReplayOrganizer
                         dataDumper.DumpValue( info.NetworkVersion );
                         dataDumper.DumpValue( info.Timestamp );
                         dataDumper.DumpValue( info.TotalDataSizeInBytes );
+
+                        if( fortniteDataGrabber.FortniteHeaderChunk == null )
+                        {
+                            dataDumper.DumpValue( "FortniteHeaderChunk is NULL." );
+                            dataDumper.ReturnToNewRow();
+                            continue;
+                        }
+                        
+                        FortniteHeaderChunk headerChunk = fortniteDataGrabber.FortniteHeaderChunk;
+                        dataDumper.DumpValue( headerChunk.MapPath );
+                        dataDumper.DumpValue( headerChunk.Release );
+                        dataDumper.DumpValue( headerChunk.SubGame );
+                        dataDumper.DumpValue( headerChunk.BuildNumber );
+                        dataDumper.DumpValue( headerChunk.A20Or21 );
+                        string test ="";
+                        if(headerChunk.GuidLike.Length>0)
+                        {
+                             test = new Guid( headerChunk.GuidLike ).ToString();
+                        }
+                        dataDumper.DumpValue( test );
+                        dataDumper.DumpValue( headerChunk.HeaderVersion );
+                        dataDumper.DumpValue( headerChunk.NotSeasonNumber );
+                        dataDumper.DumpValue( headerChunk.NotVersion );
                         Console.WriteLine( "Processed: " + Path.GetFileNameWithoutExtension( path ) );
                         dataDumper.ReturnToNewRow();
                     }

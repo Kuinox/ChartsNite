@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,24 +17,27 @@ namespace UnrealReplayParser
     /// </summary>
     public class UnrealReplayVisitor : IDisposable
     {
-        const uint FileMagic = 0x1CA2E27F;
+        const uint _fileMagic = 0x1CA2E27F;
 
         protected readonly SubStreamFactory SubStreamFactory;
-        public UnrealReplayVisitor(Stream stream)
+        public UnrealReplayVisitor( Stream stream )
         {
-            SubStreamFactory = new SubStreamFactory(stream);
+            SubStreamFactory = new SubStreamFactory( stream );
         }
 
         #region ReplayHeaderParsing
         public virtual async Task<bool> Visit()
         {
             bool noErrorOrRecovered = true;
-            using (BinaryReaderAsync binaryReader = new BinaryReaderAsync(SubStreamFactory.BaseStream, true, async () =>
+            using( BinaryReaderAsync binaryReader = new BinaryReaderAsync( SubStreamFactory.BaseStream, true, async () =>
+             {
+                 noErrorOrRecovered = await VisitReplayHeaderParsingError();
+             } ) )//TODO check if header have a constant size
             {
-                noErrorOrRecovered = await VisitReplayHeaderParsingError();
-            }))//TODO check if header have a constant size
-            {
-                if (!await ParseMagicNumber(binaryReader)) return false;
+                if( !await ParseMagicNumber( binaryReader ) )
+                {
+                    return false;
+                }
                 uint fileVersion = await binaryReader.ReadUInt32();
                 int lengthInMs = await binaryReader.ReadInt32();
                 uint networkVersion = await binaryReader.ReadUInt32();
@@ -41,18 +45,18 @@ namespace UnrealReplayParser
                 string friendlyName = await binaryReader.ReadString();
                 bool bIsLive = await binaryReader.ReadUInt32() != 0;
                 DateTime timestamp = DateTime.MinValue;
-                if (fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP)
+                if( fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP )
                 {
-                    timestamp = DateTime.FromBinary(await binaryReader.ReadInt64());
+                    timestamp = DateTime.FromBinary( await binaryReader.ReadInt64() );
                 }
                 bool bCompressed = false;
-                if (fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION)
+                if( fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION )
                 {
                     bCompressed = await binaryReader.ReadUInt32() != 0;
                 }
-                var replayInfo = new ReplayInfo(lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
-                bIsLive, bCompressed, fileVersion);
-                return noErrorOrRecovered && await VisitReplayInfo(replayInfo) && await VisitReplayChunks(replayInfo);
+                var replayInfo = new ReplayInfo( lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
+                bIsLive, bCompressed, fileVersion );
+                return noErrorOrRecovered && await VisitReplayInfo( replayInfo ) && await VisitReplayChunks( replayInfo );
             }
         }
         /// <summary>
@@ -61,76 +65,79 @@ namespace UnrealReplayParser
         /// <returns></returns>
         public virtual Task<bool> VisitReplayHeaderParsingError()
         {
-            return Task.FromResult(false);
+            return Task.FromResult( false );
         }
 
 
         public virtual Task<bool> VisitBadReplayHeader()
         {
-            return Task.FromResult(false);
+            return Task.FromResult( false );
         }
 
-        public virtual Task<bool> VisitReplayInfo(ReplayInfo replayInfo)
+        public virtual Task<bool> VisitReplayInfo( ReplayInfo replayInfo )
         {
-            return Task.FromResult(true);
+            return Task.FromResult( true );
         }
 
         #region MagicNumber
-        public virtual async Task<bool> ParseMagicNumber(BinaryReaderAsync binaryReader)
+        public virtual async Task<bool> ParseMagicNumber( BinaryReaderAsync binaryReader )
         {
-            return await VisitMagicNumber(await binaryReader.ReadUInt32());
+            return await VisitMagicNumber( await binaryReader.ReadUInt32() );
         }
         /// <summary>
-        /// Check that the magic number is equal to <see cref="FileMagic"/>
+        /// Check that the magic number is equal to <see cref="_fileMagic"/>
         /// </summary>
         /// <param name="magicNumber"></param>
         /// <returns><see langword="true"/> if the magic number is correct.</returns>
-        public virtual Task<bool> VisitMagicNumber(uint magicNumber)
+        public virtual Task<bool> VisitMagicNumber( uint magicNumber )
         {
-            return Task.FromResult(magicNumber == FileMagic);
+            return Task.FromResult( magicNumber == _fileMagic );
         }
         #endregion MagicNumber
         #endregion ReplayHeaderParsing
 
         #region ReplayContentParsing
-        public virtual async Task<bool> VisitReplayChunks(ReplayInfo replayInfo)
+        public virtual async Task<bool> VisitReplayChunks( ReplayInfo replayInfo )
         {
-            while (await ParseChunkHeader(replayInfo));
+            while( await ParseChunkHeader( replayInfo ) )
+            {
+            }
+
             return true;
         }
 
         #region ChunkParsing
 
         #region ChunkHeaderParsing
-        public virtual async Task<bool> ParseChunkHeader(ReplayInfo replayInfo)
+        public virtual async Task<bool> ParseChunkHeader( ReplayInfo replayInfo )
         {
-            ChunkInfo chunk;
             bool headerFatal = false;
             bool headerError = false;
             bool endOfStream = false;
-            using (Stream chunkHeader = await SubStreamFactory.Create(8, true))
-            using (BinaryReaderAsync chunkHeaderBinaryReader = new BinaryReaderAsync(chunkHeader))
+            int chunkSize;
+            ChunkType chunkType;
+            using( Stream chunkHeader = await SubStreamFactory.Create( 8, true ) )
+            using( BinaryReaderAsync chunkHeaderBinaryReader = new BinaryReaderAsync( chunkHeader ) )
             {
-                uint chunkType = await chunkHeaderBinaryReader.ReadUInt32();
-                int sizeInBytes = await chunkHeaderBinaryReader.ReadInt32();
-                chunk = new ChunkInfo((ChunkType)chunkType, sizeInBytes);
+                chunkType = (ChunkType)await chunkHeaderBinaryReader.ReadUInt32();
+                chunkSize = await chunkHeaderBinaryReader.ReadInt32();
                 endOfStream = chunkHeaderBinaryReader.EndOfStream;
                 headerFatal = chunkHeaderBinaryReader.Fatal;
                 headerError = chunkHeaderBinaryReader.IsError;
             }
-            if (endOfStream)
+            if( endOfStream )
             {
                 return await VisitEndOfStream();
             }
-            if (headerFatal)
+            if( headerFatal )
             {
-                return await VisitIncompleteChunkHeader(chunk);
+                return await VisitIncompleteChunkHeader( chunkType );
             }
-            if (headerError || (uint)chunk.ChunkType > 3)//All chunk types are between 0 and 3 included. If it's not in between, there is an issue.
+            if( headerError || (uint)chunkType > 3 )//All chunk types are between 0 and 3 included. If it's not in between, there is an issue.
             {
-                return await VisitCorruptedChunk(SubStreamFactory.BaseStream, chunk);
+                return await VisitCorruptedChunk( SubStreamFactory.BaseStream, chunkType );
             }
-            return await ChooseChunkType(replayInfo, chunk);
+            return await ChooseChunkType( replayInfo, chunkType, chunkSize );
         }
         /// <summary>
         /// Only does routing to the right method
@@ -139,24 +146,24 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ChooseChunkType(ReplayInfo replayInfo, ChunkInfo chunk)
+        public virtual async Task<bool> ChooseChunkType( ReplayInfo replayInfo, ChunkType chunkType, int chunkSize )
         {
-            using (SubStream subStream = await SubStreamFactory.Create(chunk.SizeInBytes, true))
-            using (BinaryReaderAsync binaryReader = new BinaryReaderAsync(subStream))
+            using( SubStream subStream = await SubStreamFactory.Create( chunkSize, true ) )
+            using( BinaryReaderAsync binaryReader = new BinaryReaderAsync( subStream ) )
             {
-                bool success = (chunk.ChunkType switch
+                bool success = (chunkType switch
                 {
-                    ChunkType.Header => await ParseHeaderChunk(replayInfo, binaryReader, chunk),
-                    ChunkType.Checkpoint => await ParseEventChunkHeader(replayInfo, binaryReader, chunk, true),
-                    ChunkType.Event => await ParseEventChunkHeader(replayInfo, binaryReader, chunk, false),
-                    ChunkType.ReplayData => await ParseReplayDataChunkHeader(replayInfo, binaryReader, chunk),
-                    _ => throw new InvalidOperationException("Invalid ChunkType")
+                    ChunkType.Header => await ParseHeaderChunk( replayInfo, binaryReader ),
+                    ChunkType.Checkpoint => await ParseEventChunkHeader( replayInfo, binaryReader, true ),
+                    ChunkType.Event => await ParseEventChunkHeader( replayInfo, binaryReader, false ),
+                    ChunkType.ReplayData => await ParseReplayDataChunkHeader( replayInfo, binaryReader ),
+                    _ => throw new InvalidOperationException( "Invalid ChunkType" )
                 });
-                if(!success)
+                if( !success )
                 {
 
                 }
-                return success? true : await VisitChunkContentParsingError();
+                return success ? true : await VisitChunkContentParsingError();
             }
         }
         #region ChunkHeaderErrorHandling
@@ -169,9 +176,9 @@ namespace UnrealReplayParser
         /// <param name="chunkType"></param>
         /// <param name="sizeInBytes"></param>
         /// <returns>if the Visitor can safely continue is job, return always false if not overriden</returns>
-        public virtual Task<bool> VisitCorruptedChunk(Stream replayStream, ChunkInfo chunk)
+        public virtual Task<bool> VisitCorruptedChunk( Stream replayStream, ChunkType chunk )
         {
-            return Task.FromResult(false);
+            return Task.FromResult( false );
         }
 
         /// <summary>
@@ -182,7 +189,7 @@ namespace UnrealReplayParser
         /// <returns><see langword="false"/>if not overidden</returns>
         public virtual Task<bool> VisitEndOfStream()
         {
-            return Task.FromResult(false);
+            return Task.FromResult( false );
         }
 
         /// <summary>
@@ -191,9 +198,9 @@ namespace UnrealReplayParser
         /// <param name="chunkType">May have a bad value</param>
         /// <param name="sizeInBytes">May have a bad value</param>
         /// <returns>Always false.</returns>
-        public virtual Task<bool> VisitIncompleteChunkHeader(ChunkInfo chunk)
+        public virtual Task<bool> VisitIncompleteChunkHeader( ChunkType chunk )
         {
-            return Task.FromResult(false);
+            return Task.FromResult( false );
         }
         #endregion ChunkHeaderErrorHandling
         #endregion ChunkHeaderParsing
@@ -204,11 +211,11 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual Task<bool> ParseHeaderChunk(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, ChunkInfo chunk)
+        public virtual Task<bool> ParseHeaderChunk( ReplayInfo replayInfo, BinaryReaderAsync binaryReader )
         {
-            return Task.FromResult(true);
+            return Task.FromResult( true );
         }
-        public virtual async Task<bool> ParseEventChunkHeader(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, ChunkInfo chunk, bool isCheckpoint)
+        public virtual async Task<bool> ParseEventChunkHeader( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, bool isCheckpoint )
         {
             string id = await binaryReader.ReadString();
             string group = await binaryReader.ReadString();
@@ -216,16 +223,11 @@ namespace UnrealReplayParser
             uint time1 = await binaryReader.ReadUInt32();
             uint time2 = await binaryReader.ReadUInt32();
             int eventSizeInBytes = await binaryReader.ReadInt32();
-            if(binaryReader.IsError)
+            if( binaryReader.IsError || (!binaryReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await VisitChunkContentParsingError()) )
             {
-
+                return false;
             }
-            bool ret = !binaryReader.IsError && await ChooseEventChunkType(replayInfo, binaryReader, new EventInfo(chunk, id, group, metadata, time1, time2, eventSizeInBytes, isCheckpoint));
-            if(!ret)
-            {
-
-            }
-            return ret;
+            return await ChooseEventChunkType( replayInfo, binaryReader, new EventInfo( id, group, metadata, time1, time2, isCheckpoint ) );
         }
 
         /// <summary>
@@ -234,7 +236,7 @@ namespace UnrealReplayParser
         /// <returns></returns>
         public virtual Task<bool> VisitChunkContentParsingError()
         {
-            return Task.FromResult(true);
+            return Task.FromResult( true );
         }
 
 
@@ -243,31 +245,32 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns>always <see langword="true"/></returns>
-        public virtual Task<bool> ChooseEventChunkType(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo)
+        public virtual Task<bool> ChooseEventChunkType( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
         {
-            return Task.FromResult(true);
+            return Task.FromResult( true );
         }
 
-        public virtual async Task<bool> ParseReplayDataChunkHeader(ReplayInfo replayInfo, BinaryReaderAsync binaryReader, ChunkInfo chunk)
+        public virtual async Task<bool> ParseReplayDataChunkHeader( ReplayInfo replayInfo, BinaryReaderAsync binaryReader )
         {
-            int replaySizeInBytes;
+            bool correctSize = true;
             uint time1 = uint.MaxValue;
             uint time2 = uint.MaxValue;
-            if (replayInfo.FileVersion >= (uint)VersionHistory.HISTORY_STREAM_CHUNK_TIMES)
+            if( replayInfo.FileVersion >= (uint)VersionHistory.HISTORY_STREAM_CHUNK_TIMES )
             {
                 time1 = await binaryReader.ReadUInt32();
                 time2 = await binaryReader.ReadUInt32();
-                replaySizeInBytes = await binaryReader.ReadInt32();
+                int replaySizeInBytes = await binaryReader.ReadInt32();
+                correctSize = binaryReader.AssertRemainingCountOfBytes( replaySizeInBytes );
             }
-            else
+            if( binaryReader.IsError || !correctSize && !await VisitChunkContentParsingError() )
             {
-                replaySizeInBytes = chunk.SizeInBytes;
+                return false;
             }
-            return !binaryReader.IsError && await ParseReplayDataChunkContent(binaryReader, new ReplayDataInfo(time1, time2, replaySizeInBytes, chunk));
+            return await ParseReplayDataChunkContent( binaryReader, new ReplayDataInfo( time1, time2 ) );
         }
-        public virtual Task<bool> ParseReplayDataChunkContent(BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo)
+        public virtual Task<bool> ParseReplayDataChunkContent( BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
         {
-            return Task.FromResult(true);
+            return Task.FromResult( true );
         }
         #endregion ChunkContentParsing
         #endregion ChunkParsing

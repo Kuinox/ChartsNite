@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -53,6 +53,7 @@ namespace Common.StreamHelpers
 
         public void Dispose()
         {
+            _factoryBaseStreams.Remove( _baseStream );
             BaseStream.Dispose();
         }
     }
