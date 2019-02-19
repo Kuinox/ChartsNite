@@ -126,10 +126,5 @@ namespace FortniteReplayParser
         {
             return Task.FromResult( true );
         }
-
-        public override Task<bool> ParseReplayDataChunkContent( BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
-        {
-            return base.ParseReplayDataChunkContent( binaryReader, replayDataInfo );
-        }
     }
 }

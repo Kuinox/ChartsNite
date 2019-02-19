@@ -13,10 +13,12 @@ namespace ChartsNite.ReplayOrganizer
 {
     class FortniteDataGrabber : FortniteReplayVisitor
     {
+        public List<byte[]> ReplayDataDumps { get; private set; }
         public ReplayInfo? ReplayInfo { get; private set; }
         public FortniteHeaderChunk? FortniteHeaderChunk { get; private set; }
         public FortniteDataGrabber( Stream stream ) : base( stream )
         {
+            ReplayDataDumps = new List<byte[]>();
         }
         public override Task<bool> VisitReplayInfo( ReplayInfo replayInfo )
         {
@@ -27,12 +29,6 @@ namespace ChartsNite.ReplayOrganizer
         {
             FortniteHeaderChunk = headerChunk;
             return base.VisitFortniteHeaderChunk( headerChunk );
-        }
-
-        public override async Task<bool> ParseReplayDataChunkContent( BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
-        {
-            //await binaryReader.ReadBytes(replayDataInfo.ReplayDataSizeInBytes)//TODO: redo size
-            return await base.ParseReplayDataChunkContent( binaryReader, replayDataInfo );
         }
     }
 }

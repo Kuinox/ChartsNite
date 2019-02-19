@@ -9,14 +9,14 @@ namespace Common.StreamHelpers
 {
     public class BinaryReaderAsync : IDisposable
     {
-        public readonly Stream Stream;
+        public readonly Stream BaseStream;
         readonly bool _leaveOpen;
         private readonly Func<Task>? _errorFunc;
         string? _errorDescription;
         bool _fatal;
         public BinaryReaderAsync(Stream stream, bool leaveOpen = false, Func<Task>? errorAction = null)
         {
-            Stream = stream;
+            BaseStream = stream;
             _leaveOpen = leaveOpen;
             _errorFunc = errorAction;
         }
@@ -29,7 +29,7 @@ namespace Common.StreamHelpers
 
         public bool AssertRemainingCountOfBytes(int length)
         {
-            return Stream.Length - Stream.Position == length;
+            return BaseStream.Length - BaseStream.Position == length;
         }
         public void SetFatal()
         {
@@ -94,7 +94,7 @@ namespace Common.StreamHelpers
             int toRead = count;
             while (toRead > 0)
             {
-                int read = await Stream.ReadAsync(buffer, count - toRead, count);
+                int read = await BaseStream.ReadAsync(buffer, count - toRead, count);
                 if (read == 0)
                 {
                     EndOfStream = true;
@@ -104,6 +104,11 @@ namespace Common.StreamHelpers
                 toRead -= read;
             }
             return buffer;
+        }
+
+        public Task<byte[]> DumpRemainingBytes()
+        {
+            return ReadBytes((int) (BaseStream.Length - BaseStream.Position) );
         }
         #region ReadNumbers
         public async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4), 0);
@@ -118,7 +123,7 @@ namespace Common.StreamHelpers
         public async Task<string> ReadString()
         {
             int length = await ReadInt32();
-            if (length > Stream.Length + Stream.Position || length<0 && -length > Stream.Length + Stream.Position)
+            if (length > BaseStream.Length + BaseStream.Position || length<0 && -length > BaseStream.Length + BaseStream.Position)
             {
                 await AddError("The size of the string was bigger than the stream. Probably not a string.");
                 return "";
@@ -149,7 +154,7 @@ namespace Common.StreamHelpers
         {
             if(!_leaveOpen)
             {
-                Stream.Dispose();
+                BaseStream.Dispose();
             }
         }
         #endregion ReadString

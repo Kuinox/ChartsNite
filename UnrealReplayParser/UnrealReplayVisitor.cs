@@ -266,11 +266,34 @@ namespace UnrealReplayParser
             {
                 return false;
             }
-            return await ParseReplayDataChunkContent( binaryReader, new ReplayDataInfo( time1, time2 ) );
+            return await ParseReplayData( await UncompressData( binaryReader, replayInfo ), new ReplayDataInfo( time1, time2 ) ); ;
         }
-        public virtual Task<bool> ParseReplayDataChunkContent( BinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+
+        public virtual Task<bool> ParseReplayData(BinaryReader binaryReader, ReplayDataInfo replayDataInfo)
         {
-            return Task.FromResult( true );
+            return Task.FromResult(true);
+        }
+        /// <summary>
+        /// Will uncompress if needed, then return the array of bytes.
+        /// </summary>
+        /// <param name="binaryReader"></param>
+        /// <param name="replayDataInfo"></param>
+        /// <returns></returns>
+        public virtual async Task<BinaryReader> UncompressData( BinaryReaderAsync binaryReader, ReplayInfo replayInfo )
+        {
+            byte[] output;
+            if( replayInfo.BCompressed )
+            {
+                int decompressedSize = await binaryReader.ReadInt32();
+                int compressedSize = await binaryReader.ReadInt32();
+                byte[] compressedBuffer = await binaryReader.ReadBytes( compressedSize );
+                output = OodleBinding.Decompress( compressedBuffer, compressedBuffer.Length, decompressedSize );
+            }
+            else
+            {
+                output = await binaryReader.DumpRemainingBytes();
+            }
+            return new BinaryReader( new MemoryStream( output ) );
         }
         #endregion ChunkContentParsing
         #endregion ChunkParsing
