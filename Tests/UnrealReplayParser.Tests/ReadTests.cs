@@ -17,6 +17,17 @@ namespace UnrealReplayParser.Tests
     {
         public static IEnumerable<(Type, string)> ParserProvider() => new ReplayFetcher().GetAllReplaysStreamsWithAllParsers();
 
+
+        [Test, TestCaseSource( nameof( ParserProvider ) )]
+        public async Task NoExceptionWhileReading( (Type, string) tuple )
+        {
+            using( Stream replayStream = new DebugStream( File.OpenRead( tuple.Item2 ) ) )
+            using( UnrealReplayVisitor unrealVisitor = new UnrealReplayVisitor( replayStream ) )
+            {
+                (await unrealVisitor.Visit()).Should().Be( true );
+            }
+        }
+
         [Test, TestCaseSource(nameof(ParserProvider))]
         public async Task NoErrorWhileReading((Type,string) tuple)
         {
@@ -25,8 +36,8 @@ namespace UnrealReplayParser.Tests
             using (UnrealReplayVisitor unrealVisitor = (UnrealReplayVisitor)substituteOfType.Invoke(null, new[] { new object[] { replayStream } }))
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
-                await unrealVisitor.DidNotReceiveWithAnyArgs().VisitChunkContentParsingError();
-                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ReplayInfo>(), Arg.Any<ChunkType>(), Arg.Any<int>());
+                await unrealVisitor.DidNotReceiveWithAnyArgs().ErrorOnChunkContentParsingAsync();
+                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<CustomBinaryReaderAsync>(), Arg.Any<ReplayInfo>(), Arg.Any<ChunkType>(), Arg.Any<int>());
             }
         }
 

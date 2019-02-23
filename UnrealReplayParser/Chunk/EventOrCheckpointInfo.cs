@@ -3,7 +3,7 @@ using UnrealReplayParser.Chunk;
 
 namespace UnrealReplayParser
 {
-    public class EventInfo
+    public class EventOrCheckpointInfo
     {
         public readonly string Id;
         public readonly string Group;
@@ -12,7 +12,7 @@ namespace UnrealReplayParser
         public readonly uint Time2;
         public readonly bool IsCheckpoint;
 
-        public EventInfo(string id, string group, string metadata, uint time1, uint time2, bool isCheckpoint)
+        public EventOrCheckpointInfo(string id, string group, string metadata, uint time1, uint time2, bool isCheckpoint)
         {
             Id = id;
             Group = group;
@@ -22,7 +22,7 @@ namespace UnrealReplayParser
             IsCheckpoint = isCheckpoint;
         }
 
-        protected EventInfo(EventInfo info)
+        protected EventOrCheckpointInfo(EventOrCheckpointInfo info)
         {
             Id = info.Id;
             Group = info.Group;

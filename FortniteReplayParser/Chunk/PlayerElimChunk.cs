@@ -6,7 +6,7 @@ using UnrealReplayParser;
 
 namespace FortniteReplayParser
 {
-    public class PlayerElimChunk : EventInfo
+    public class PlayerElimChunk : EventOrCheckpointInfo
     {
         public readonly bool CorrectlyParsed;
         public readonly byte[] UnknownData;
@@ -14,7 +14,7 @@ namespace FortniteReplayParser
         public readonly string PlayerKilling;
         public readonly WeaponType Weapon;
         public readonly State VictimState;
-        public PlayerElimChunk(EventInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
+        public PlayerElimChunk(EventOrCheckpointInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
         {
             UnknownData = unknownData;
             PlayerKilled = playerKilled;

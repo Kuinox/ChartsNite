@@ -19,8 +19,10 @@ namespace ChartsNite.ReplayOrganizer
             {
                 ExcelWorksheet replayWorksheet = excelPackage.Workbook.Worksheets.Add( "replayName" );
                 ExcelWorksheet replayData = excelPackage.Workbook.Worksheets.Add( "replayData" );
+                ExcelWorksheet checkpoint = excelPackage.Workbook.Worksheets.Add( "checkpoint" );
                 DataDumper replayHeaderDumper = new DataDumper( replayWorksheet );
                 DataDumper replayDataDumper = new DataDumper( replayData );
+                DataDumper checkpointDumper = new DataDumper( checkpoint );
                 int i = 0;
                 foreach( var path in new ReplayFetcher().GetAllReplaysPath() )
                 {
@@ -41,8 +43,8 @@ namespace ChartsNite.ReplayOrganizer
                             continue;
                         }
                         ReplayInfo info = fortniteDataGrabber.ReplayInfo;
-                        replayHeaderDumper.DumpValue( info.BCompressed );
-                        replayHeaderDumper.DumpValue( info.BIsLive );
+                        replayHeaderDumper.DumpValue( info.Compressed );
+                        replayHeaderDumper.DumpValue( info.IsLive );
                         replayHeaderDumper.DumpValue( info.Changelist );
                         replayHeaderDumper.DumpValue( info.FileVersion );
                         replayHeaderDumper.DumpValue( info.FriendlyName );
@@ -82,6 +84,23 @@ namespace ChartsNite.ReplayOrganizer
                             replayDataDumper.DumpValue(replayHeaderDumper.Row);
                             replayDataDumper.DumpValue(BitConverter.ToString(replayDataDump));
                             replayDataDumper.ReturnToNewRow();
+                            replayDataDumper.DumpValue( replayHeaderDumper.Row );
+                            replayDataDumper.DumpValue( Encoding.ASCII.GetString( replayDataDump ) );
+                            replayDataDumper.ReturnToNewRow();
+                        }
+                        int ij = 0;
+                        foreach( byte[] checkpointDump in fortniteDataGrabber.CheckpointsDumps )
+                        {
+                            checkpointDumper.DumpValue( replayHeaderDumper.Row );
+                            checkpointDumper.DumpValue( BitConverter.ToString( checkpointDump ) );
+                            checkpointDumper.ReturnToNewRow();
+                            checkpointDumper.DumpValue( replayHeaderDumper.Row );
+                            checkpointDumper.DumpValue( Encoding.ASCII.GetString( checkpointDump ) );
+                            checkpointDumper.ReturnToNewRow();
+                            using( var stream = File.OpenWrite( ij++ + ".dump" ) )
+                            {
+                                stream.Write( checkpointDump, 0, checkpointDump.Length );
+                            }
                         }
 
 

@@ -7,9 +7,6 @@
 
     <NullableContextOptions>enable</NullableContextOptions>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

@@ -17,7 +17,7 @@ namespace UnrealReplayParser
     /// </summary>
     public class UnrealReplayVisitor : IDisposable
     {
-        const uint _fileMagic = 0x1CA2E27F;
+        protected const uint FileMagic = 0x1CA2E27F;
 
         protected readonly SubStreamFactory SubStreamFactory;
         public UnrealReplayVisitor( Stream stream )
@@ -29,9 +29,9 @@ namespace UnrealReplayParser
         public virtual async Task<bool> Visit()
         {
             bool noErrorOrRecovered = true;
-            using( BinaryReaderAsync binaryReader = new BinaryReaderAsync( SubStreamFactory.BaseStream, true, async () =>
+            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true, async () =>
              {
-                 noErrorOrRecovered = await VisitReplayHeaderParsingError();
+                 noErrorOrRecovered = await ErrorOnReplayHeaderParsing();
              } ) )//TODO check if header have a constant size
             {
                 if( !await ParseMagicNumber( binaryReader ) )
@@ -43,19 +43,19 @@ namespace UnrealReplayParser
                 uint networkVersion = await binaryReader.ReadUInt32();
                 uint changelist = await binaryReader.ReadUInt32();
                 string friendlyName = await binaryReader.ReadString();
-                bool bIsLive = await binaryReader.ReadUInt32() != 0;
+                bool isLive = await binaryReader.ReadUInt32() != 0;
                 DateTime timestamp = DateTime.MinValue;
                 if( fileVersion >= (uint)VersionHistory.HISTORY_RECORDED_TIMESTAMP )
                 {
                     timestamp = DateTime.FromBinary( await binaryReader.ReadInt64() );
                 }
-                bool bCompressed = false;
+                bool compressed = false;
                 if( fileVersion >= (uint)VersionHistory.HISTORY_COMPRESSION )
                 {
-                    bCompressed = await binaryReader.ReadUInt32() != 0;
+                    compressed = await binaryReader.ReadUInt32() != 0;
                 }
                 var replayInfo = new ReplayInfo( lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
-                bIsLive, bCompressed, fileVersion );
+                isLive, compressed, fileVersion );
                 return noErrorOrRecovered && await VisitReplayInfo( replayInfo ) && await VisitReplayChunks( replayInfo );
             }
         }
@@ -63,35 +63,38 @@ namespace UnrealReplayParser
         /// Error occured while parsing the header.
         /// </summary>
         /// <returns></returns>
-        public virtual Task<bool> VisitReplayHeaderParsingError()
+        public virtual Task<bool> ErrorOnReplayHeaderParsing()
         {
             return Task.FromResult( false );
         }
-
-
-        public virtual Task<bool> VisitBadReplayHeader()
-        {
-            return Task.FromResult( false );
-        }
-
+        /// <summary>
+        /// Does nothing, overload this if you want to grab the <see cref="ReplayInfo"/>
+        /// </summary>
+        /// <param name="replayInfo"></param>
+        /// <returns></returns>
         public virtual Task<bool> VisitReplayInfo( ReplayInfo replayInfo )
         {
             return Task.FromResult( true );
         }
 
         #region MagicNumber
-        public virtual async Task<bool> ParseMagicNumber( BinaryReaderAsync binaryReader )
+        /// <summary>
+        /// I don't know maybe you want to change that ? Why i did this ? I don't know me too.
+        /// </summary>
+        /// <param name="binaryReader"></param>
+        /// <returns></returns>
+        public virtual async Task<bool> ParseMagicNumber( CustomBinaryReaderAsync binaryReader )
         {
             return await VisitMagicNumber( await binaryReader.ReadUInt32() );
         }
         /// <summary>
-        /// Check that the magic number is equal to <see cref="_fileMagic"/>
+        /// Check that the magic number is equal to <see cref="FileMagic"/>
         /// </summary>
         /// <param name="magicNumber"></param>
         /// <returns><see langword="true"/> if the magic number is correct.</returns>
         public virtual Task<bool> VisitMagicNumber( uint magicNumber )
         {
-            return Task.FromResult( magicNumber == _fileMagic );
+            return Task.FromResult( magicNumber == FileMagic );
         }
         #endregion MagicNumber
         #endregion ReplayHeaderParsing
@@ -109,6 +112,13 @@ namespace UnrealReplayParser
         #region ChunkParsing
 
         #region ChunkHeaderParsing
+        /// <summary>
+        /// Parse the header of a chunk, with that we know the <see cref="ChunkType"/> and the length of the chunk
+        /// Took extra caution because there is no <see cref="SubStream"/> to protect the reading.
+        /// When I discover the length of the replay, I immediatly create a SubStream so i can protect the rest of the replay.
+        /// </summary>
+        /// <param name="replayInfo"></param>
+        /// <returns></returns>
         public virtual async Task<bool> ParseChunkHeader( ReplayInfo replayInfo )
         {
             bool headerFatal = false;
@@ -117,13 +127,14 @@ namespace UnrealReplayParser
             int chunkSize;
             ChunkType chunkType;
             using( Stream chunkHeader = await SubStreamFactory.Create( 8, true ) )
-            using( BinaryReaderAsync chunkHeaderBinaryReader = new BinaryReaderAsync( chunkHeader ) )
+            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader ) )
             {
-                chunkType = (ChunkType)await chunkHeaderBinaryReader.ReadUInt32();
-                chunkSize = await chunkHeaderBinaryReader.ReadInt32();
-                endOfStream = chunkHeaderBinaryReader.EndOfStream;
-                headerFatal = chunkHeaderBinaryReader.Fatal;
-                headerError = chunkHeaderBinaryReader.IsError;
+                chunkType = (ChunkType)await binaryReader.ReadUInt32();
+                endOfStream = binaryReader.EndOfStream;
+                chunkSize = await binaryReader.ReadInt32();
+                headerFatal = binaryReader.Fatal;
+                headerError = binaryReader.IsError;
+                binaryReader.SetErrorReported();
             }
             if( endOfStream )
             {
@@ -137,7 +148,20 @@ namespace UnrealReplayParser
             {
                 return await VisitCorruptedChunk( SubStreamFactory.BaseStream, chunkType );
             }
-            return await ChooseChunkType( replayInfo, chunkType, chunkSize );
+            bool result;
+            bool isError;
+            using( SubStream subStream = await SubStreamFactory.Create( chunkSize, true ) )
+            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( subStream ) )
+            {
+                result = await ChooseChunkType( binaryReader, replayInfo, chunkType, chunkSize );
+                isError = binaryReader.IsError;
+                binaryReader.SetErrorReported();
+            }
+            if(isError && await ErrorOnChunkContentParsingAsync() )
+            {
+                return false;
+            }
+            return result;
         }
         /// <summary>
         /// Only does routing to the right method
@@ -146,26 +170,34 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ChooseChunkType( ReplayInfo replayInfo, ChunkType chunkType, int chunkSize )
+        public virtual async Task<bool> ChooseChunkType( CustomBinaryReaderAsync binaryReader, ReplayInfo replayInfo, ChunkType chunkType, int chunkSize )
         {
-            using( SubStream subStream = await SubStreamFactory.Create( chunkSize, true ) )
-            using( BinaryReaderAsync binaryReader = new BinaryReaderAsync( subStream ) )
+            return (chunkType switch
             {
-                bool success = (chunkType switch
-                {
-                    ChunkType.Header => await ParseHeaderChunk( replayInfo, binaryReader ),
-                    ChunkType.Checkpoint => await ParseEventChunkHeader( replayInfo, binaryReader, true ),
-                    ChunkType.Event => await ParseEventChunkHeader( replayInfo, binaryReader, false ),
-                    ChunkType.ReplayData => await ParseReplayDataChunkHeader( replayInfo, binaryReader ),
-                    _ => throw new InvalidOperationException( "Invalid ChunkType" )
-                });
-                if( !success )
-                {
-
-                }
-                return success ? true : await VisitChunkContentParsingError();
-            }
+                ChunkType.Header => await ParseGameSpecificHeaderChunk( replayInfo, binaryReader ),
+                ChunkType.Checkpoint => await ParseEventOrCheckpointHeader( replayInfo, binaryReader, true ),
+                ChunkType.Event => await ParseEventOrCheckpointHeader( replayInfo, binaryReader, false ),
+                ChunkType.ReplayData => await ParseReplayDataChunkHeader( replayInfo, binaryReader ),
+                _ => throw new InvalidOperationException( "Invalid ChunkType" )
+            }) ? true : await ErrorOnChunkContentParsingAsync();
         }
+        /// <summary>
+        /// Error inside chunk content parsing
+        /// </summary>
+        /// <returns></returns>
+        public virtual Task<bool> ErrorOnChunkContentParsingAsync()
+        {
+            return Task.FromResult( true );
+        }
+        /// <summary>
+        /// Error inside chunk content parsing
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool ErrorOnChunkContentParsing()
+        {
+            return true;
+        }
+
         #region ChunkHeaderErrorHandling
         /// <summary>
         /// Does nothing, but you can try to recover from a corrupted/unsupported file here.
@@ -205,17 +237,22 @@ namespace UnrealReplayParser
         #endregion ChunkHeaderErrorHandling
         #endregion ChunkHeaderParsing
 
+
+
         #region ChunkContentParsing
+        #region Header
         /// <summary>
-        /// Simply return true and does nothing else.
+        /// Simply return true and does nothing else. It depends on the implementation of the game.
         /// </summary>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual Task<bool> ParseHeaderChunk( ReplayInfo replayInfo, BinaryReaderAsync binaryReader )
+        public virtual Task<bool> ParseGameSpecificHeaderChunk( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader )
         {
             return Task.FromResult( true );
         }
-        public virtual async Task<bool> ParseEventChunkHeader( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, bool isCheckpoint )
+        #endregion Header
+        #region EventOrCheckPoint
+        public virtual async Task<bool> ParseEventOrCheckpointHeader( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, bool isCheckpoint )
         {
             string id = await binaryReader.ReadString();
             string group = await binaryReader.ReadString();
@@ -223,34 +260,46 @@ namespace UnrealReplayParser
             uint time1 = await binaryReader.ReadUInt32();
             uint time2 = await binaryReader.ReadUInt32();
             int eventSizeInBytes = await binaryReader.ReadInt32();
-            if( binaryReader.IsError || (!binaryReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await VisitChunkContentParsingError()) )
+            if( binaryReader.IsError || (!binaryReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await ErrorOnParseEventOrCheckpointHeader()) )
             {
                 return false;
             }
-            return await ChooseEventChunkType( replayInfo, binaryReader, new EventInfo( id, group, metadata, time1, time2, isCheckpoint ) );
+
+            if(isCheckpoint)
+            {
+                return await ParseCheckpointContent( await UncompressDataIfNeeded( binaryReader, replayInfo ), id, group, metadata, time1, time2 );
+            }
+            bool success = await ChooseEventChunkType( replayInfo, binaryReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2, isCheckpoint ));
+            if(!success || binaryReader.IsError)
+            {
+                return await ErrorOnParseEventOrCheckpointHeader();
+            }
+            return true;
         }
 
-        /// <summary>
-        /// Error inside chunk content parsing
-        /// </summary>
-        /// <returns></returns>
-        public virtual Task<bool> VisitChunkContentParsingError()
+        public virtual Task<bool> ParseCheckpointContent(CustomBinaryReaderAsync binaryReader, string id, string group, string metadata, uint time1, uint time2)
         {
-            return Task.FromResult( true );
+            return Task.FromResult(true);
         }
 
-
+        public virtual Task<bool> ErrorOnParseEventOrCheckpointHeader()
+        {
+            return ErrorOnChunkContentParsingAsync();
+        }
         /// <summary>
         /// We do nothing there
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns>always <see langword="true"/></returns>
-        public virtual Task<bool> ChooseEventChunkType( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual Task<bool> ChooseEventChunkType( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
+        #endregion EventOrCheckPoint
 
-        public virtual async Task<bool> ParseReplayDataChunkHeader( ReplayInfo replayInfo, BinaryReaderAsync binaryReader )
+
+        #region ReplayData
+        public virtual async Task<bool> ParseReplayDataChunkHeader( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader )
         {
             bool correctSize = true;
             uint time1 = uint.MaxValue;
@@ -262,27 +311,93 @@ namespace UnrealReplayParser
                 int replaySizeInBytes = await binaryReader.ReadInt32();
                 correctSize = binaryReader.AssertRemainingCountOfBytes( replaySizeInBytes );
             }
-            if( binaryReader.IsError || !correctSize && !await VisitChunkContentParsingError() )
+            if( binaryReader.IsError || !correctSize && !ErrorOnParseReplayDataChunk() )
             {
                 return false;
             }
-            return await ParseReplayData( await UncompressData( binaryReader, replayInfo ), new ReplayDataInfo( time1, time2 ) ); ;
+            return await ParseReplayData( await UncompressDataIfNeeded( binaryReader, replayInfo ), new ReplayDataInfo( time1, time2 ) ); ;
         }
 
-        public virtual Task<bool> ParseReplayData(BinaryReader binaryReader, ReplayDataInfo replayDataInfo)
+        public virtual bool ErrorOnParseReplayDataChunk()
         {
-            return Task.FromResult(true);
+           return ErrorOnChunkContentParsing();
         }
         /// <summary>
-        /// Will uncompress if needed, then return the array of bytes.
+        /// Was writed to support how Fortnite store replays.
+        /// This may need to be upgrade to support other games, or some future version of Fortnite.
         /// </summary>
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns></returns>
-        public virtual async Task<BinaryReader> UncompressData( BinaryReaderAsync binaryReader, ReplayInfo replayInfo )
+        public virtual async Task<bool> ParseReplayData( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        {
+            int currentLevelIndex = await binaryReader.ReadInt32();//TODO: use replayVersion.
+            float timeSeconds = await binaryReader.ReadSingle();
+            await ParseReceiveData( binaryReader, replayDataInfo );//TODO: use replayVersion.
+
+            return true;
+        }
+
+        public virtual async Task<bool> ParseReceiveData( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        {
+            return await ParseNetFieldExports( binaryReader, replayDataInfo )
+                && await ParseNetExportGUIDs( binaryReader, replayDataInfo );
+        }
+
+        public virtual async Task<bool> ParseNetFieldExports( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        {
+            uint exportCout = await binaryReader.ReadIntPacked();
+            for( int i = 0; i < exportCout; i++ )
+            {
+                uint pathNameIndex = await binaryReader.ReadIntPacked();
+                uint wasExported = await binaryReader.ReadIntPacked();
+                if(wasExported>0)
+                {
+                    string pathName = await binaryReader.ReadString();
+                    uint numExports = await binaryReader.ReadIntPacked();
+                } else
+                {
+                    //We does nothing here but Unreal does something
+                }
+                var netExports = await binaryReader.ReadNetFieldExport();
+            }
+            if(binaryReader.IsError)
+            {
+                return await ErrorOnParseNetFieldExports();
+            }
+            return true;
+        }
+
+      
+
+        public virtual async Task<bool> ParseNetExportGUIDs( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        {
+            uint guidCount = await binaryReader.ReadIntPacked();
+            for( int i = 0; i < guidCount; i++ )
+            {
+                byte[] guidData = await binaryReader.ReadBytes( await binaryReader.ReadInt32() );
+                //TODO: use memory reader
+            }
+            return true;
+        }
+        public virtual Task<bool> ErrorOnParseNetFieldExports()
+        {
+            return Task.FromResult( ErrorOnParseReplayDataChunk() );
+        }
+        #endregion ReplayData
+
+        /// <summary>
+        /// Will uncompress if needed, then return the array of bytes.
+        /// Will simply read the chunk of data and return it if it's not needed.
+        /// I didn't test against not compressed replay, so it may fail.
+        /// </summary>
+        /// <param name="binaryReader"></param>
+        /// <param name="replayDataInfo"></param>
+        /// <returns>Readable data uncompresed if it was needed</returns>
+        public virtual async Task<CustomBinaryReaderAsync> UncompressDataIfNeeded( CustomBinaryReaderAsync binaryReader, ReplayInfo replayInfo )
         {
             byte[] output;
-            if( replayInfo.BCompressed )
+            if( replayInfo.Compressed )
             {
                 int decompressedSize = await binaryReader.ReadInt32();
                 int compressedSize = await binaryReader.ReadInt32();
@@ -293,8 +408,9 @@ namespace UnrealReplayParser
             {
                 output = await binaryReader.DumpRemainingBytes();
             }
-            return new BinaryReader( new MemoryStream( output ) );
+            return new CustomBinaryReaderAsync( new MemoryStream( output ) );
         }
+
         #endregion ChunkContentParsing
         #endregion ChunkParsing
 

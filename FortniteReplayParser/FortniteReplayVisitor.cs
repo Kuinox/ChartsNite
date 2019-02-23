@@ -16,7 +16,7 @@ namespace FortniteReplayParser
         }
 
 
-        public override Task<bool> ChooseEventChunkType( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public override Task<bool> ChooseEventChunkType( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return eventInfo.Group switch
             {
@@ -30,41 +30,41 @@ namespace FortniteReplayParser
                 _ => VisitUnknowEventChunkType( replayInfo, binaryReader, eventInfo )
             };
         }
-        public virtual Task<bool> VisitFortBenchEvent( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual Task<bool> VisitFortBenchEvent( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual Task<bool> VisitPlayerStateEncryptionKey( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual Task<bool> VisitPlayerStateEncryptionKey( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual Task<bool> VisitAthenaReplayBrowserEvents( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual Task<bool> VisitAthenaReplayBrowserEvents( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual Task<bool> VisitUnknowEventChunkType( ReplayInfo replayInfo, BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual Task<bool> VisitUnknowEventChunkType( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( false );
         }
 
-        public virtual Task<bool> VisitCheckPoint( EventInfo eventInfo )
+        public virtual Task<bool> VisitCheckPoint( EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual Task<bool> VisitAthenaMatchStats( EventInfo eventInfo )
+        public virtual Task<bool> VisitAthenaMatchStats( EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual Task<bool> VisitAthenaMatchTeamStats( EventInfo eventInfo )
+        public virtual Task<bool> VisitAthenaMatchTeamStats( EventOrCheckpointInfo eventInfo )
         {
             return Task.FromResult( true );
         }
-        public virtual async Task<bool> VisitPlayerElimChunk( BinaryReaderAsync binaryReader, EventInfo eventInfo )
+        public virtual async Task<bool> VisitPlayerElimChunk( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             byte[] unknownData = await binaryReader.ReadBytes( 45 );
             string killed = await binaryReader.ReadString();
             string killer = await binaryReader.ReadString();
-            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadByteOnce();
+            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByte();
             PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32();
             return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
         }
@@ -74,7 +74,7 @@ namespace FortniteReplayParser
             return Task.FromResult( true );
         }
 
-        public override async Task<bool> ParseHeaderChunk( ReplayInfo replayInfo, BinaryReaderAsync binaryReader )
+        public override async Task<bool> ParseGameSpecificHeaderChunk( ReplayInfo replayInfo, CustomBinaryReaderAsync binaryReader )
         {
             uint fortniteMagicNumber = await binaryReader.ReadUInt32();//this is an attempt and shouldnt be read as fact but an attempt to known what is the data behind.
             if( fortniteMagicNumber != 754295101 )
