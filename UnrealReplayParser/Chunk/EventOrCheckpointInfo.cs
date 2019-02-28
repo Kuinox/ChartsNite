@@ -12,14 +12,13 @@ namespace UnrealReplayParser
         public readonly uint Time2;
         public readonly bool IsCheckpoint;
 
-        public EventOrCheckpointInfo(string id, string group, string metadata, uint time1, uint time2, bool isCheckpoint)
+        public EventOrCheckpointInfo(string id, string group, string metadata, uint time1, uint time2)
         {
             Id = id;
             Group = group;
             Metadata = metadata;
             Time1 = time1;
             Time2 = time2;
-            IsCheckpoint = isCheckpoint;
         }
 
         protected EventOrCheckpointInfo(EventOrCheckpointInfo info)

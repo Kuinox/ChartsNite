@@ -1,4 +1,4 @@
-﻿namespace FortniteReplayParser
+namespace FortniteReplayParser
 {
     static class UserNameChecker
     {
@@ -9,7 +9,11 @@
         /// <returns></returns>
         public static bool CheckUserName(string userName)
         {
-            if (userName.Length < 3 || userName.Length > 16) return false;//Tested against Epic Games Account creation. Probably bad because UTF8 username will probably have their length doubled.
+            if (userName.Length < 3 || userName.Length > 16)
+            {
+                return false;//Tested against Epic Games Account creation. Probably bad because UTF8 username will probably have their length doubled.
+            }
+
             return true;//TODO : better check.
         }
     }

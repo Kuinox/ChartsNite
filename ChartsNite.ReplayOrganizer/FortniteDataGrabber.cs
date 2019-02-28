@@ -33,10 +33,10 @@ namespace ChartsNite.ReplayOrganizer
             return base.VisitFortniteHeaderChunk( headerChunk );
         }
 
-        public override async Task<bool> ParseCheckpointContent( CustomBinaryReaderAsync binaryReader, string id, string group, string metadata, uint time1, uint time2 )
+        public override async Task<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
         {
-            bool result = await base.ParseCheckpointContent( binaryReader, id, group, metadata, time1, time2 );
-            CheckpointsDumps.Add( await binaryReader.ReadBytes( (int)(binaryReader.BaseStream.Length - binaryReader.BaseStream.Position) ) );
+            bool result = await base.ParseCheckpointContent( chunkReader, id, group, metadata, time1, time2 );
+            CheckpointsDumps.Add( await chunkReader.ReadBytes( (int)(chunkReader.BaseStream.Length - chunkReader.BaseStream.Position) ) );
             return result;
         }
         public override async Task<bool> ParseReplayData( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )

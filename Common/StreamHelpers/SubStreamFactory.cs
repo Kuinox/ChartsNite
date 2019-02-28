@@ -37,7 +37,7 @@ namespace Common.StreamHelpers
         /// <param name="length"></param>
         /// <param name="leaveOpen"></param>
         /// <returns></returns>
-        public async Task<SubStream> Create(long length, bool leaveOpen = false)
+        public SubStream Create(long length, bool leaveOpen = false)
         {
             if (_previousSubStream != null)
             {
@@ -45,7 +45,6 @@ namespace Common.StreamHelpers
                 {
                     throw new InvalidOperationException("Dispose the precedent SubStream first. I won't do it for you.");
                 }
-                await _previousSubStream.DisposeAsync();
             }
             _previousSubStream = new SubStream(BaseStream, length, leaveOpen);
             return _previousSubStream;

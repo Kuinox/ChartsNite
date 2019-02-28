@@ -128,38 +128,21 @@ namespace Common.StreamHelpers
             return ReadBytes((int) (BaseStream.Length - BaseStream.Position) );
         }
         #region ReadNumbers
-        public async Task<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4), 0);
+        public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4), 0);
         public async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4), 0);
         public async Task<byte> ReadOneByte() => (await ReadBytes(1))[0];
 
         public async Task<float> ReadSingle() => BitConverter.ToSingle(await ReadBytes(4), 0);
         public async Task<short> ReadInt16() => BitConverter.ToInt16(await ReadBytes(2), 0);
+        public async Task<ushort> ReadUInt16() => BitConverter.ToUInt16( await ReadBytes( 2 ), 0 );
         public async Task<long> ReadInt64() => BitConverter.ToInt64(await ReadBytes(8), 0);
 
-        /// <summary>
-        /// In UnrealEngine source code: void FArchive::SerializeIntPacked( uint32& Value )
-        /// </summary>
-        /// <returns></returns>
-        public async Task<uint> ReadIntPacked()
-        {
-            uint value = 0;
-            byte count = 0;
-            bool more = true;
-
-            while(more)
-            {
-                byte nextByte = await ReadOneByte();
-                more = (nextByte & 1) == 1;         // Check 1 bit to see if theres more after this
-                nextByte >>= 1;           // Shift to get actual 7 bit value
-                value += (uint)nextByte << (7 * count++); // Add to total value
-            }
-            return value;
-        }
+        
 
         #endregion ReadNumbers
 
         #region ReadStructs
-        public async Task<string> ReadString()
+        public async ValueTask<string> ReadString()
         {
             int length = await ReadInt32();
             if (length > BaseStream.Length + BaseStream.Position || length<0 && -length > BaseStream.Length + BaseStream.Position)
@@ -219,6 +202,27 @@ namespace Common.StreamHelpers
             public uint CompatibleChecksum { get; set; }
             public string Name { get; set; }
             public string Type { get; set; }
+        }
+
+
+        /// <summary>
+        /// In UnrealEngine source code: void FArchive::SerializeIntPacked( uint32& Value )
+        /// </summary>
+        /// <returns></returns>
+        public async Task<uint> ReadIntPacked()
+        {
+            uint value = 0;
+            byte count = 0;
+            bool more = true;
+
+            while( more )
+            {
+                byte nextByte = await ReadOneByte();
+                more = (nextByte & 1) == 1;         // Check 1 bit to see if theres more after this
+                nextByte >>= 1;           // Shift to get actual 7 bit value
+                value += (uint)nextByte << (7 * count++); // Add to total value
+            }
+            return value;
         }
 
         public async Task<NetFieldExport> ReadNetFieldExport()
