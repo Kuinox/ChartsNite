@@ -35,7 +35,7 @@ namespace ChartsNite.ReplayOrganizer
                     using( var replayStream = File.OpenRead( path ) )
                     using( var fortniteDataGrabber = new FortniteDataGrabber( replayStream ) )
                     {
-                        await fortniteDataGrabber.Visit();
+                        bool t = await fortniteDataGrabber.Visit();
                         if( fortniteDataGrabber.ReplayInfo == null )
                         {
                             replayHeaderDumper.DumpValue( "ReplayInfo is NULL." );

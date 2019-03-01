@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Common.StreamHelpers
 {
-    public class CustomBinaryReaderAsync : IDisposable
+    public class CustomBinaryReaderAsync : IAsyncDisposable
     {
         public readonly Stream BaseStream;
         readonly bool _leaveOpen;
@@ -40,9 +40,6 @@ namespace Common.StreamHelpers
         {
             _fatal = true;
         }
-
-
-
 
         /// <summary>
         /// Adds an error (the message starts with the caller's method name) to the existing ones (if any).
@@ -172,18 +169,6 @@ namespace Common.StreamHelpers
             return value.Trim(' ', '\0');
         }
 
-        public void Dispose()
-        {
-            if(!_errorReported)
-            {
-                throw new InvalidOperationException( "You must report errors before Diposing" );
-            }
-            if(!_leaveOpen)
-            {
-                BaseStream.Dispose();
-            }
-        }
-
         public class NetFieldExport
         {
             NetFieldExport(bool exported, uint handle, uint compatibleChecksum, string name, string type)
@@ -237,6 +222,18 @@ namespace Common.StreamHelpers
             string name = await ReadString();
             string type = await ReadString();
             return NetFieldExport.InitializeExported( handle, compatibleChecksum, name, type );
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if( !_errorReported )
+            {
+                throw new InvalidOperationException( "You must report errors before Diposing" );
+            }
+            if( !_leaveOpen )
+            {
+                await BaseStream.DisposeAsync();
+            }
         }
 
         #endregion ReadStructs

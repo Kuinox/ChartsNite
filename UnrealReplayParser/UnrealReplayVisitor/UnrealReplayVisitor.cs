@@ -30,13 +30,17 @@ namespace UnrealReplayParser
         public virtual async Task<bool> VisitReplayChunks( ReplayInfo replayInfo )
         {
             bool isEndOfStream = false;
-            while(!isEndOfStream)
+            while( !isEndOfStream )
             {
-                await foreach( (ChunkType chunkType, int size) in ParseChunkHeader( replayInfo ) )
+                await foreach( (ChunkType chunkType, ChunkReader chunkReader) in ParseChunkHeader( replayInfo ) )
                 {
                     if( chunkType == ChunkType.EndOfStream )
                     {
                         isEndOfStream = true;
+                    }
+                    if( !await ChooseChunkType( chunkReader, chunkType ))
+                    {
+                        return false;
                     }
                 }
                 isEndOfStream = !await VisitEndOfStream();
@@ -54,12 +58,12 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="replayInfo"></param>
         /// <returns></returns>
-        public virtual async IAsyncEnumerable<(ChunkType chunkType, int size)> ParseChunkHeader( ReplayInfo replayInfo )
+        public virtual async IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayInfo replayInfo )
         {
             int chunkSize;
             ChunkType chunkType;
             await using( SubStream chunkHeader = SubStreamFactory.Create( 8, true ) )
-            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
+            await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
             {
                 chunkType = (ChunkType)await binaryReader.ReadUInt32();
                 if( binaryReader.EndOfStream )
@@ -73,7 +77,7 @@ namespace UnrealReplayParser
                     {
                         _endOfStream = true;
                         binaryReader.SetErrorReported();
-                        yield return (ChunkType.EndOfStream, 0);
+                        yield return (ChunkType.EndOfStream, null);
                     }
                 }
                 chunkSize = await binaryReader.ReadInt32();
@@ -82,9 +86,8 @@ namespace UnrealReplayParser
                     binaryReader.SetErrorReported();
                     yield break;
                 }
-
-                yield return (chunkType, chunkSize);
             }
+            yield return (chunkType, new ChunkReader( SubStreamFactory.Create( chunkSize ), replayInfo ));
             //bool result;
             //bool isError;
             //using( SubStream subStream = await SubStreamFactory.Create( chunkSize, true ) )
@@ -107,7 +110,7 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ChooseChunkType( ChunkReader chunkReader, ChunkType chunkType, int chunkSize )
+        public virtual async Task<bool> ChooseChunkType( ChunkReader chunkReader, ChunkType chunkType )
         {
             return (chunkType switch
             {

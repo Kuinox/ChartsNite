@@ -213,7 +213,9 @@ namespace Common.StreamHelpers
             {
                 throw new NotImplementedException(); // we can't do this. so we throw an exception synchronously
             }
-            int toSkip = (int)(Length - Position);//https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
+            //https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
+            int toSkip = (int)(Length - _relativePosition);//Dont use Position, because it check if the object is Disposed.
+
             if( toSkip == 0 )
             { //we have nothing to skip
                 return;

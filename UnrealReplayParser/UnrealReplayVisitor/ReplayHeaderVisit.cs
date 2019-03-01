@@ -24,7 +24,7 @@ namespace UnrealReplayParser
         {
             bool noErrorOrRecovered = true;
             ReplayInfo replayInfo;
-            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true, async () =>
+            await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true, async () =>
              {
                  noErrorOrRecovered = await ErrorOnReplayHeaderParsing();
              } ) )//TODO check if header have a constant size
@@ -53,13 +53,11 @@ namespace UnrealReplayParser
                 isLive, compressed, fileVersion );
             }
             var enumerator = ParseChunkHeader( replayInfo ).GetAsyncEnumerator();
-            if( !noErrorOrRecovered || !await VisitReplayInfo( replayInfo ) || !await enumerator.MoveNextAsync() || enumerator.Current.chunkType != ChunkType.Header )
+            if( !noErrorOrRecovered || !await VisitReplayInfo( replayInfo ) || !await enumerator.MoveNextAsync() || enumerator.Current.chunkType != ChunkType.Header ||enumerator.Current.chunkReader == null )
             {
                 return false;
             }
-
-            await using( SubStream stream = SubStreamFactory.Create( enumerator.Current.size, true ) )
-            using( ChunkReader chunkReader = new ChunkReader( stream, replayInfo, true ) )
+            await using( ChunkReader chunkReader = enumerator.Current.chunkReader )
             {
                 await ParseGameSpecificHeaderChunk( chunkReader );
             }

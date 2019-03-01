@@ -37,7 +37,7 @@ namespace UnrealReplayParser.Tests
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
                 await unrealVisitor.DidNotReceiveWithAnyArgs().ErrorOnChunkContentParsingAsync();
-                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ChunkReader>(), Arg.Any<ChunkType>(), Arg.Any<int>());
+                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ChunkReader>(), Arg.Any<ChunkType>());
             }
         }
 
