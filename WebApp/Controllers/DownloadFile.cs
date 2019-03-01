@@ -28,7 +28,7 @@ namespace WebApp.Controllers
         public async Task<IActionResult> ReplayUpload(IFormFile file)
         {
             List<PlayerElimChunk> kills = new List<PlayerElimChunk>();
-            ReplayInfo info;
+            ReplayHeader info;
             string hash;
             using (Stream replayStream = file.OpenReadStream())//TODO can timeout, BIGINT, check SQL types.
             using (SHA1Stream hashStream = new SHA1Stream(replayStream, true, false))

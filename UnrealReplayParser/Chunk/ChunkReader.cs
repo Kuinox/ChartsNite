@@ -10,9 +10,9 @@ namespace UnrealReplayParser.Chunk
 {
     public class ChunkReader : CustomBinaryReaderAsync
     {
-        public readonly ReplayInfo ReplayInfo;
+        public readonly ReplayHeader ReplayInfo;
 
-        public ChunkReader(Stream stream, ReplayInfo replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
+        public ChunkReader(Stream stream, ReplayHeader replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
         {
             ReplayInfo = replayInfo;
         }

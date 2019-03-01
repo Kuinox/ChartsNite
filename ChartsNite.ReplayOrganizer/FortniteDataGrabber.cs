@@ -1,6 +1,5 @@
 using Common.StreamHelpers;
 using FortniteReplayParser;
-using FortniteReplayParser.Chunk;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,24 +12,19 @@ namespace ChartsNite.ReplayOrganizer
 {
     class FortniteDataGrabber : FortniteReplayVisitor
     {
+        public bool Error { get; private set; }
         public List<byte[]> ReplayDataDumps { get; private set; }
         public List<byte[]> CheckpointsDumps { get; private set; }
         public ReplayInfo? ReplayInfo { get; private set; }
-        public FortniteHeaderChunk? FortniteHeaderChunk { get; private set; }
         public FortniteDataGrabber( Stream stream ) : base( stream )
         {
             ReplayDataDumps = new List<byte[]>();
             CheckpointsDumps = new List<byte[]>();
         }
-        public override Task<bool> VisitReplayInfo( ReplayInfo replayInfo )
+        public override async Task<ReplayInfo?> ParseReplayInfo()
         {
-            ReplayInfo = replayInfo;
-            return base.VisitReplayInfo( replayInfo );
-        }
-        public override Task<bool> VisitFortniteHeaderChunk( FortniteHeaderChunk headerChunk )
-        {
-            FortniteHeaderChunk = headerChunk;
-            return base.VisitFortniteHeaderChunk( headerChunk );
+            ReplayInfo = await base.ParseReplayInfo();
+            return ReplayInfo;
         }
 
         public override async Task<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
@@ -44,6 +38,12 @@ namespace ChartsNite.ReplayOrganizer
             bool result = await base.ParseReplayData( binaryReader, replayDataInfo );
             ReplayDataDumps.Add( await binaryReader.ReadBytes( (int)(binaryReader.BaseStream.Length - binaryReader.BaseStream.Position) ) );
             return result;
+        }
+
+        public override Task<bool> ErrorOnChunkContentParsingAsync()
+        {
+            Error = true;
+            return base.ErrorOnChunkContentParsingAsync();
         }
     }
 }

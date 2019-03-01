@@ -56,9 +56,9 @@ namespace UnrealReplayParser
         /// Took extra caution because there is no <see cref="SubStream"/> to protect the reading.
         /// When I discover the length of the replay, I immediatly create a SubStream so i can protect the rest of the replay.
         /// </summary>
-        /// <param name="replayInfo"></param>
+        /// <param name="replayHeader"></param>
         /// <returns></returns>
-        public virtual async IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayInfo replayInfo )
+        public virtual async IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayHeader replayHeader )
         {
             int chunkSize;
             ChunkType chunkType;
@@ -87,22 +87,11 @@ namespace UnrealReplayParser
                     yield break;
                 }
             }
-            yield return (chunkType, new ChunkReader( SubStreamFactory.Create( chunkSize ), replayInfo ));
-            //bool result;
-            //bool isError;
-            //using( SubStream subStream = await SubStreamFactory.Create( chunkSize, true ) )
-            //using( ChunkReader binaryReader = new ChunkReader( subStream, replayInfo) )
-            //{
-            //    result = await ChooseChunkType( binaryReader, chunkType, chunkSize );
-            //    isError = binaryReader.IsError;
-            //    binaryReader.SetErrorReported();
-            //}
-            //if(isError && await ErrorOnChunkContentParsingAsync() )
-            //{
-            //    return false;
-            //}
-            //return result;
+            yield return (chunkType, new ChunkReader( SubStreamFactory.Create( chunkSize ), replayHeader ));
         }
+
+        public virtual IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayInfo replayInfo ) =>
+            ParseChunkHeader( replayInfo.ReplayHeader );
         /// <summary>
         /// Only does routing to the right method
         /// No operation should be done here.

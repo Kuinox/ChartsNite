@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
-using static UnrealReplayParser.ReplayInfo;
+using static UnrealReplayParser.ReplayHeader;
 
 namespace UnrealReplayParser
 {

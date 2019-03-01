@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using UnrealReplayParser;
 
-namespace FortniteReplayParser
+namespace FortniteReplayParser.Chunk
 {
     public class PlayerElimChunk : EventOrCheckpointInfo
     {

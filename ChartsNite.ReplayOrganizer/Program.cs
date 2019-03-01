@@ -35,52 +35,49 @@ namespace ChartsNite.ReplayOrganizer
                     using( var replayStream = File.OpenRead( path ) )
                     using( var fortniteDataGrabber = new FortniteDataGrabber( replayStream ) )
                     {
-                        bool t = await fortniteDataGrabber.Visit();
-                        if( fortniteDataGrabber.ReplayInfo == null )
+                        bool success =await fortniteDataGrabber.Visit();
+                        if( fortniteDataGrabber.ReplayInfo == null || fortniteDataGrabber.ReplayInfo.ReplayHeader == null )
                         {
                             replayHeaderDumper.DumpValue( "ReplayInfo is NULL." );
                             replayHeaderDumper.ReturnToNewRow();
                             continue;
                         }
                         ReplayInfo info = fortniteDataGrabber.ReplayInfo;
-                        replayHeaderDumper.DumpValue( info.Compressed );
-                        replayHeaderDumper.DumpValue( info.IsLive );
-                        replayHeaderDumper.DumpValue( info.Changelist );
-                        replayHeaderDumper.DumpValue( info.FileVersion );
-                        replayHeaderDumper.DumpValue( info.FriendlyName );
-                        replayHeaderDumper.DumpValue( info.LengthInMs );
-                        replayHeaderDumper.DumpValue( info.NetworkVersion );
-                        replayHeaderDumper.DumpValue( info.Timestamp );
-                        replayHeaderDumper.DumpValue( info.TotalDataSizeInBytes );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.Compressed );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.IsLive );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.Changelist );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.FileVersion );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.FriendlyName );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.LengthInMs );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.NetworkVersion );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.Timestamp );
+                        replayHeaderDumper.DumpValue( info.ReplayHeader.TotalDataSizeInBytes );
 
-                        if( fortniteDataGrabber.FortniteHeaderChunk == null )
+                        if( fortniteDataGrabber.ReplayInfo.DemoHeader == null )
                         {
-                            replayHeaderDumper.DumpValue( "FortniteHeaderChunk is NULL." );
+                            replayHeaderDumper.DumpValue( "Header chunk is NULL." );
                             replayHeaderDumper.ReturnToNewRow();
                             continue;
                         }
                         
-                        FortniteHeaderChunk headerChunk = fortniteDataGrabber.FortniteHeaderChunk;
-                        replayHeaderDumper.DumpValue( headerChunk.MapPath );
-                        replayHeaderDumper.DumpValue( headerChunk.Release );
-                        replayHeaderDumper.DumpValue( headerChunk.SubGame );
-                        replayHeaderDumper.DumpValue( headerChunk.BuildNumber );
-                        replayHeaderDumper.DumpValue( headerChunk.A20Or21 );
-                        string test ="";
-                        if(headerChunk.GuidLike.Length>0)
-                        {
-                             test = new Guid( headerChunk.GuidLike ).ToString();
-                        }
-                        replayHeaderDumper.DumpValue( test );
-                        replayHeaderDumper.DumpValue( headerChunk.HeaderVersion );
-                        replayHeaderDumper.DumpValue( headerChunk.NotSeasonNumber );
-                        replayHeaderDumper.DumpValue( headerChunk.NotVersion );
-
-
-
+                        DemoHeader headerChunk = fortniteDataGrabber.ReplayInfo.DemoHeader;
+                        replayHeaderDumper.DumpValue( headerChunk.Version );
+                        replayHeaderDumper.DumpValue( headerChunk.Branch );
+                        replayHeaderDumper.DumpValue( headerChunk.HeaderFlags );
+                        replayHeaderDumper.DumpValue( headerChunk.Major + "." + headerChunk.Minor+ "." + headerChunk.Patch );
+                        replayHeaderDumper.DumpValue( string.Join( "/", headerChunk.GameSpecificData ) );
+                        replayHeaderDumper.DumpValue( fortniteDataGrabber.Error );
+                        //string test ="";
+                        //if(headerChunk.GuidLike.Length>0)
+                        //{
+                        //     test = new Guid( headerChunk.GuidLike ).ToString();
+                        //}
+                        //replayHeaderDumper.DumpValue( test );
+                        //replayHeaderDumper.DumpValue( headerChunk.HeaderVersion );
+                        //replayHeaderDumper.DumpValue( headerChunk.NotSeasonNumber );
+                        //replayHeaderDumper.DumpValue( headerChunk.NotVersion );
                         foreach( byte[] replayDataDump in fortniteDataGrabber.ReplayDataDumps )
                         {
-  
                             replayDataDumper.DumpValue(replayHeaderDumper.Row);
                             replayDataDumper.DumpValue(BitConverter.ToString(replayDataDump));
                             replayDataDumper.ReturnToNewRow();
