@@ -207,6 +207,7 @@ namespace Common.StreamHelpers
             Disposed = true;
             if( !_leaveOpen || _dontFlush )
             {
+                await _stream.DisposeAsync();
                 return;
             }
             if( !CanRead && !CanSeek )

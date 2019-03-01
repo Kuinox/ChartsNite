@@ -27,7 +27,7 @@ namespace ChartsNite.ReplayOrganizer
                 foreach( var path in new ReplayFetcher().GetAllReplaysPath() )
                 {
                     i++;
-                    if(i==25)
+                    if(i==250)
                     {
                         break;
                     }

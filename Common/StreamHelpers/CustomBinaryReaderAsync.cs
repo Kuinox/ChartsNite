@@ -15,24 +15,25 @@ namespace Common.StreamHelpers
         string? _errorDescription;
         bool _fatal;
         bool _errorReported = true;
-        public CustomBinaryReaderAsync(Stream stream, bool leaveOpen = false, Func<Task>? errorAction = null)
+        public CustomBinaryReaderAsync( Stream stream, bool leaveOpen = false, Func<Task>? errorAction = null )
         {
             BaseStream = stream;
             _leaveOpen = leaveOpen;
             _errorFunc = errorAction;
         }
 
-        public bool IsError => !string.IsNullOrWhiteSpace(_errorDescription) || _fatal;
+        public bool IsError => !string.IsNullOrWhiteSpace( _errorDescription ) || _fatal;
         public void SetErrorReported() => _errorReported = true;
         public bool Fatal => _fatal;
         public string? ErrorMessage => _errorDescription;
         bool _endOfStream;
-        public bool EndOfStream {
+        public bool EndOfStream
+        {
             get => BaseStream.Position == BaseStream.Length || _endOfStream;
             private set => _endOfStream = value;
         }
 
-        public bool AssertRemainingCountOfBytes(int length)
+        public bool AssertRemainingCountOfBytes( int length )
         {
             return BaseStream.Length - BaseStream.Position == length;
         }
@@ -52,42 +53,43 @@ namespace Common.StreamHelpers
         /// false to append it (as a cause: [previous] &lt;-- [added])</param>
         /// <param name="callerName">Name of the caller (automatically injected by the compiler).</param>
         /// <returns>Always false to use it as the return statement in a match method.</returns>
-        public async Task<bool> AddError(object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null)
+        public async Task<bool> AddError( object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null )
         {
-            if(!EndOfStream)
+            if( !EndOfStream )
             {
 
             }
             _errorReported = false;
-            if(_errorFunc != null)
+            if( _errorFunc != null )
             {
                 await _errorFunc();
             }
-            if (fatal) {
+            if( fatal )
+            {
                 SetFatal();
             }
-            if (_errorDescription != null)
+            if( _errorDescription != null )
             {
-                if (beforeExisting)
+                if( beforeExisting )
                 {
-                    _errorDescription = FormatMessage(errorMessage, callerName) + Environment.NewLine + "<-- " + _errorDescription;
+                    _errorDescription = FormatMessage( errorMessage, callerName ) + Environment.NewLine + "<-- " + _errorDescription;
                 }
                 else
                 {
-                    _errorDescription = _errorDescription + Environment.NewLine + "<-- " + FormatMessage(errorMessage, callerName);
+                    _errorDescription = _errorDescription + Environment.NewLine + "<-- " + FormatMessage( errorMessage, callerName );
                 }
             }
             else
             {
-                _errorDescription = FormatMessage(errorMessage, callerName);
+                _errorDescription = FormatMessage( errorMessage, callerName );
             }
             return false;
         }
-        static string? FormatMessage(object? expectedMessage, string? callerName)
+        static string? FormatMessage( object? expectedMessage, string? callerName )
         {
             string? d = callerName;
             string? tail = expectedMessage?.ToString();
-            if (!string.IsNullOrEmpty(tail))
+            if( !string.IsNullOrEmpty( tail ) )
             {
                 d += ": expected '" + tail + "'.";
             }
@@ -98,16 +100,16 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="count"></param>
         /// <returns>Asked bytes, then zeros if there was no enough, in this case, the <see cref="BinaryReader"/></returns>
-        public async Task<byte[]> ReadBytes(int count)
+        public async Task<byte[]> ReadBytes( int count )
         {
             byte[] buffer = new byte[count];
             int toRead = count;
-            while (toRead > 0)
+            while( toRead > 0 )
             {
-                int read = await BaseStream.ReadAsync(buffer, count - toRead, count);
-                if (read == 0)
+                int read = await BaseStream.ReadAsync( buffer, count - toRead, count );
+                if( read == 0 )
                 {
-                    if(EndOfStream)
+                    if( EndOfStream )
                     {
                         await AddError( "No more bytes to read", true, true );
                         break;
@@ -122,19 +124,19 @@ namespace Common.StreamHelpers
 
         public Task<byte[]> DumpRemainingBytes()
         {
-            return ReadBytes((int) (BaseStream.Length - BaseStream.Position) );
+            return ReadBytes( (int)(BaseStream.Length - BaseStream.Position) );
         }
         #region ReadNumbers
-        public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32(await ReadBytes(4), 0);
-        public async Task<int> ReadInt32() => BitConverter.ToInt32(await ReadBytes(4), 0);
-        public async Task<byte> ReadOneByte() => (await ReadBytes(1))[0];
+        public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32( await ReadBytes( 4 ), 0 );
+        public async Task<int> ReadInt32() => BitConverter.ToInt32( await ReadBytes( 4 ), 0 );
+        public async Task<byte> ReadOneByte() => (await ReadBytes( 1 ))[0];
 
-        public async Task<float> ReadSingle() => BitConverter.ToSingle(await ReadBytes(4), 0);
-        public async Task<short> ReadInt16() => BitConverter.ToInt16(await ReadBytes(2), 0);
+        public async Task<float> ReadSingle() => BitConverter.ToSingle( await ReadBytes( 4 ), 0 );
+        public async Task<short> ReadInt16() => BitConverter.ToInt16( await ReadBytes( 2 ), 0 );
         public async Task<ushort> ReadUInt16() => BitConverter.ToUInt16( await ReadBytes( 2 ), 0 );
-        public async Task<long> ReadInt64() => BitConverter.ToInt64(await ReadBytes(8), 0);
+        public async Task<long> ReadInt64() => BitConverter.ToInt64( await ReadBytes( 8 ), 0 );
 
-        
+
 
         #endregion ReadNumbers
 
@@ -142,12 +144,17 @@ namespace Common.StreamHelpers
         public async ValueTask<string> ReadString()
         {
             int length = await ReadInt32();
-            if (length > BaseStream.Length + BaseStream.Position || length<0 && -length > BaseStream.Length + BaseStream.Position)
+            if( length == -2147483648 )//if we reverse this, it has an
             {
-                await AddError("The size of the string was bigger than the stream. Probably not a string.");
+                await AddError( "The size of the string has an invalid value" );
                 return "";
             }
-            if (length == 0)
+            if( length > BaseStream.Length + BaseStream.Position || length < 0 && -length > BaseStream.Length + BaseStream.Position )
+            {
+                await AddError( "The size of the string was bigger than the stream. Probably not a string." );
+                return "";
+            }
+            if( length == 0 )
             {
                 return "";
             }
@@ -155,23 +162,23 @@ namespace Common.StreamHelpers
             bool isUnicode = length < 0;
             byte[] data;
             string value;
-            if (isUnicode)
+            if( isUnicode )
             {
                 length = -length;
-                data = await ReadBytes(length * 2);
-                value = Encoding.Unicode.GetString(data);
+                data = await ReadBytes( length * 2 );
+                value = Encoding.Unicode.GetString( data );
             }
             else
             {
-                data = await ReadBytes(length);
-                value = Encoding.Default.GetString(data);
+                data = await ReadBytes( length );
+                value = Encoding.Default.GetString( data );
             }
-            return value.Trim(' ', '\0');
+            return value.Trim( ' ', '\0' );
         }
 
         public class NetFieldExport
         {
-            NetFieldExport(bool exported, uint handle, uint compatibleChecksum, string name, string type)
+            NetFieldExport( bool exported, uint handle, uint compatibleChecksum, string name, string type )
             {
                 Exported = exported;
                 Handle = handle;
@@ -183,7 +190,7 @@ namespace Common.StreamHelpers
             public static NetFieldExport InitializeExported( uint handle, uint compatibleChecksum, string name, string type ) => new NetFieldExport( true, handle, compatibleChecksum, name, type );
 
             public bool Exported { get; set; }
-            public uint Handle { get; set; } 
+            public uint Handle { get; set; }
             public uint CompatibleChecksum { get; set; }
             public string Name { get; set; }
             public string Type { get; set; }

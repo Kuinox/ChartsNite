@@ -10,11 +10,18 @@ namespace UnrealReplayParser.Chunk
 {
     public class ChunkReader : CustomBinaryReaderAsync
     {
-        public readonly ReplayHeader ReplayInfo;
-
-        public ChunkReader(Stream stream, ReplayHeader replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
+        public readonly ReplayInfo ReplayInfo;
+        public readonly ChunkType ChunkType;
+        public ChunkReader(ChunkType chunkType, Stream stream, ReplayInfo replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
         {
             ReplayInfo = replayInfo;
+            ChunkType = chunkType;
+        }
+
+        public ChunkReader(ChunkType chunkType, ReplayInfo replayInfo) : base(new MemoryStream(), false)
+        {
+            ReplayInfo = replayInfo;
+            ChunkType = chunkType;
         }
 
         /// <summary>
@@ -28,7 +35,7 @@ namespace UnrealReplayParser.Chunk
         public virtual async Task<ChunkReader> UncompressDataIfNeeded()//TODO change what i return
         {
             byte[] output;
-            if( ReplayInfo.Compressed )
+            if( ReplayInfo.ReplayHeader.Compressed )
             {
                 int decompressedSize = await ReadInt32();
                 int compressedSize = await ReadInt32();
@@ -39,7 +46,7 @@ namespace UnrealReplayParser.Chunk
             {
                 output = await DumpRemainingBytes();
             }
-            return new ChunkReader( new MemoryStream( output ), ReplayInfo );
+            return new ChunkReader(ChunkType, new MemoryStream( output ), ReplayInfo );
         }
     }
 }

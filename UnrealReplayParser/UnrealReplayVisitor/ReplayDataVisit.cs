@@ -23,7 +23,7 @@ namespace UnrealReplayParser
             bool correctSize = true;
             uint time1 = uint.MaxValue;
             uint time2 = uint.MaxValue;
-            if( chunkReader.ReplayInfo.FileVersion >= ReplayVersionHistory.streamChunkTimes )
+            if( chunkReader.ReplayInfo.ReplayHeader.FileVersion >= ReplayVersionHistory.streamChunkTimes )
             {
                 time1 = await chunkReader.ReadUInt32();
                 time2 = await chunkReader.ReadUInt32();

@@ -5,6 +5,7 @@ using Common.StreamHelpers;
 using System.Diagnostics;
 using UnrealReplayParser.Chunk;
 using FortniteReplayParser.Chunk;
+using System;
 
 namespace FortniteReplayParser
 {
@@ -56,18 +57,25 @@ namespace FortniteReplayParser
         {
             return Task.FromResult( true );
         }
-        public virtual async Task<bool> VisitPlayerElimChunk( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
+        public virtual async Task<bool> VisitPlayerElimChunk( ChunkReader binaryReader, EventOrCheckpointInfo eventInfo )
         {
-            byte[] unknownData = await binaryReader.ReadBytes( 45 );
-            string killed = await binaryReader.ReadString();
-            string killer = await binaryReader.ReadString();
-            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByte();
-            PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32();
-            if(binaryReader.IsError)
+            using( Stream stream = File.OpenRead( Guid.NewGuid().ToString() ) )
             {
-
+                var buffer = await binaryReader.DumpRemainingBytes();
+                await stream.WriteAsync( buffer, 0, buffer.Length );
             }
-            return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
+            return true;
+
+            //byte[] unknownData = await binaryReader.ReadBytes( 45 );
+            //string killed = await binaryReader.ReadString();
+            //string killer = await binaryReader.ReadString();
+            //PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByte();
+            //PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32();
+            //if(binaryReader.IsError)
+            //{
+
+            //}
+            //return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
         }
 
         public virtual Task<bool> VisitPlayerElimResult( PlayerElimChunk playerElim )

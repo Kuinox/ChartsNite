@@ -19,7 +19,6 @@ namespace UnrealReplayParser
     public partial class UnrealReplayVisitor : IDisposable
     {
 
-        bool _endOfStream;
         protected readonly SubStreamFactory SubStreamFactory;
         public UnrealReplayVisitor( Stream stream )
         {
@@ -29,23 +28,32 @@ namespace UnrealReplayParser
         #region ReplayContentParsing
         public virtual async Task<bool> VisitReplayChunks( ReplayInfo replayInfo )
         {
-            bool isEndOfStream = false;
-            while( !isEndOfStream )
+            while( true )
             {
-                await foreach( (ChunkType chunkType, ChunkReader chunkReader) in ParseChunkHeader( replayInfo ) )
+                await using( ChunkReader? chunkReader = await ParseChunkHeader( replayInfo ) )
                 {
-                    if( chunkType == ChunkType.EndOfStream )
+                    if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
                     {
-                        isEndOfStream = true;
+                        return true;
                     }
-                    if( !await ChooseChunkType( chunkReader, chunkType ))
+                    if( chunkReader == null )
                     {
                         return false;
                     }
+                    if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
+                    {
+                        return false;
+                    }
+                    if( chunkReader.IsError )
+                    {
+                        chunkReader.SetErrorReported();
+                        if( !await ErrorOnChunkContentParsingAsync() )
+                        {
+                            return false;
+                        }
+                    }
                 }
-                isEndOfStream = !await VisitEndOfStream();
             }
-            return isEndOfStream;
         }
 
         #region ChunkParsing
@@ -56,9 +64,9 @@ namespace UnrealReplayParser
         /// Took extra caution because there is no <see cref="SubStream"/> to protect the reading.
         /// When I discover the length of the replay, I immediatly create a SubStream so i can protect the rest of the replay.
         /// </summary>
-        /// <param name="replayHeader"></param>
+        /// <param name="replayInfo"></param>
         /// <returns></returns>
-        public virtual async IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayHeader replayHeader )
+        public virtual async ValueTask<ChunkReader> ParseChunkHeader( ReplayInfo replayInfo )
         {
             int chunkSize;
             ChunkType chunkType;
@@ -68,30 +76,19 @@ namespace UnrealReplayParser
                 chunkType = (ChunkType)await binaryReader.ReadUInt32();
                 if( binaryReader.EndOfStream )
                 {
-                    if( _endOfStream )
-                    {
-                        binaryReader.SetErrorReported();
-                        yield break;
-                    }
-                    else
-                    {
-                        _endOfStream = true;
-                        binaryReader.SetErrorReported();
-                        yield return (ChunkType.EndOfStream, null);
-                    }
+                    binaryReader.SetErrorReported();
+                    return new ChunkReader(ChunkType.EndOfStream, replayInfo);
                 }
                 chunkSize = await binaryReader.ReadInt32();
                 if( binaryReader.IsError || (uint)chunkType > 3 )
                 {
                     binaryReader.SetErrorReported();
-                    yield break;
+                    return new ChunkReader( ChunkType.Unknown, replayInfo );
                 }
             }
-            yield return (chunkType, new ChunkReader( SubStreamFactory.Create( chunkSize ), replayHeader ));
+            return new ChunkReader(chunkType, SubStreamFactory.Create( chunkSize ), replayInfo );
         }
 
-        public virtual IAsyncEnumerable<(ChunkType chunkType, ChunkReader? chunkReader)> ParseChunkHeader( ReplayInfo replayInfo ) =>
-            ParseChunkHeader( replayInfo.ReplayHeader );
         /// <summary>
         /// Only does routing to the right method
         /// No operation should be done here.

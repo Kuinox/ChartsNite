@@ -39,22 +39,24 @@ namespace UnrealReplayParser
                 {
                     return null;
                 }
-                var enumerator = ParseChunkHeader( replayHeader ).GetAsyncEnumerator();
-                
-                if( !await enumerator.MoveNextAsync() || enumerator.Current.chunkReader == null )
+
+                await using( ChunkReader chunkReader = await ParseChunkHeader( new ReplayInfo( replayHeader, new DemoHeader( NetworkVersionHistory.initial, 0, 0, 0, new byte[0], 0, 0, 0, 0, "", new (string, uint)[0], ReplayHeaderFlags.None, new string[0] ) ) ) )
                 {
-                    return null;
+                    if( chunkReader == null )
+                    {
+                        return null;
+                    }
+                    DemoHeader? demoHeader;
+                    await using( chunkReader )
+                    {
+                        demoHeader = await ParseGameSpecificHeaderChunk( chunkReader );
+                    }
+                    if( demoHeader == null )
+                    {
+                        return null;
+                    }
+                    return new ReplayInfo( replayHeader, demoHeader );
                 }
-                DemoHeader? demoHeader;
-                await using( ChunkReader chunkReader = enumerator.Current.chunkReader )
-                {
-                    demoHeader = await ParseGameSpecificHeaderChunk( chunkReader );
-                }
-                if( demoHeader == null )
-                {
-                    return null;
-                }
-                return new ReplayInfo( replayHeader, demoHeader );
             }
         }
 
