@@ -32,26 +32,27 @@ namespace UnrealReplayParser
             {
                 await using( ChunkReader? chunkReader = await ParseChunkHeader( replayInfo ) )
                 {
-                    if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
-                    {
-                        return true;
-                    }
-                    if( chunkReader == null )
-                    {
-                        return false;
-                    }
-                    if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
-                    {
-                        return false;
-                    }
-                    if( chunkReader.IsError )
-                    {
-                        chunkReader.SetErrorReported();
-                        if( !await ErrorOnChunkContentParsingAsync() )
-                        {
-                            return false;
-                        }
-                    }
+                    await chunkReader.DumpRemainingBytes();
+                    //if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
+                    //{
+                    //    return true;
+                    //}
+                    //if( chunkReader == null )
+                    //{
+                    //    return false;
+                    //}
+                    //if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
+                    //{
+                    //    return false;
+                    //}
+                    //if( chunkReader.IsError )
+                    //{
+                    //    chunkReader.SetErrorReported();
+                    //    if( !await ErrorOnChunkContentParsingAsync() )
+                    //    {
+                    //        return false;
+                    //    }
+                    //}
                 }
             }
         }

@@ -124,7 +124,7 @@ namespace Common.StreamHelpers
 
         public Task<byte[]> DumpRemainingBytes()
         {
-            return ReadBytes( (int)(BaseStream.Length - BaseStream.Position) );
+            return ReadBytes( (int)((BaseStream.Length - BaseStream.Position)) );
         }
         #region ReadNumbers
         public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32( await ReadBytes( 4 ), 0 );
