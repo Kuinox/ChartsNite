@@ -102,6 +102,10 @@ namespace Common.StreamHelpers
         /// <returns>Asked bytes, then zeros if there was no enough, in this case, the <see cref="BinaryReader"/></returns>
         public async Task<byte[]> ReadBytes( int count )
         {
+            if(count<0)
+            {
+                throw new ArgumentException("Cannot read a negative amount.");
+            }
             byte[] buffer = new byte[count];
             int toRead = count;
             while( toRead > 0 )
@@ -124,7 +128,7 @@ namespace Common.StreamHelpers
 
         public Task<byte[]> DumpRemainingBytes()
         {
-            return ReadBytes( (int)((BaseStream.Length - BaseStream.Position)) );
+            return ReadBytes( (int)(BaseStream.Length - BaseStream.Position));
         }
         #region ReadNumbers
         public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32( await ReadBytes( 4 ), 0 );

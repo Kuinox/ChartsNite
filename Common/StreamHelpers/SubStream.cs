@@ -24,6 +24,7 @@ namespace Common.StreamHelpers
         /// <param name="leaveOpen"></param>
         internal SubStream( Stream stream, long length, bool leaveOpen = false )
         {
+            Disposed = false;
             bool isLengthAvailable;
             try
             {
@@ -204,10 +205,10 @@ namespace Common.StreamHelpers
             {
                 return;
             }
-            Disposed = true;
             if( !_leaveOpen || _dontFlush )
             {
                 await _stream.DisposeAsync();
+                Disposed = true;
                 return;
             }
             if( !CanRead && !CanSeek )
@@ -219,11 +220,13 @@ namespace Common.StreamHelpers
 
             if( toSkip == 0 )
             { //we have nothing to skip
+                Disposed = true;
                 return;
             }
             if( CanSeek )
             {
                 SeekWithoutChecks( Length, SeekOrigin.Begin );
+                Disposed = true;
                 return;//yay ! we could do everything synchronously
             }
             while( toSkip != 0 )
@@ -235,6 +238,7 @@ namespace Common.StreamHelpers
                     throw new EndOfStreamException( "Unexpected End of Stream." );
                 }
             }
+            Disposed = true;
         }
 
         protected override void Dispose( bool disposing )

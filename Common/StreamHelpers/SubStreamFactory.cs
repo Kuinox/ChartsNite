@@ -20,13 +20,13 @@ namespace Common.StreamHelpers
         /// There should be one, and only one <see cref="SubStreamFactory"/> per <see cref="Stream"/>.
         /// </summary>
         /// <param name="baseStream"></param>
-        public SubStreamFactory(Stream baseStream)
+        public SubStreamFactory( Stream baseStream )
         {
-            if (_factoryBaseStreams.Contains(baseStream))
+            if( _factoryBaseStreams.Contains( baseStream ) )
             {
-                throw new InvalidOperationException("Cannot create two Factory for the same base Stream. You should not do that.");
+                throw new InvalidOperationException( "Cannot create two Factory for the same base Stream. You should not do that." );
             }
-            _factoryBaseStreams.Add(baseStream);
+            _factoryBaseStreams.Add( baseStream );
             _baseStream = baseStream;
         }
 
@@ -37,16 +37,13 @@ namespace Common.StreamHelpers
         /// <param name="length"></param>
         /// <param name="leaveOpen"></param>
         /// <returns></returns>
-        public SubStream Create(long length, bool leaveOpen = false)
+        public SubStream Create( long length)
         {
-            if (_previousSubStream != null)
+            if( !_previousSubStream?.Disposed ?? false )
             {
-                if (!_previousSubStream.Disposed)
-                {
-                    throw new InvalidOperationException("Dispose the precedent SubStream first. I won't do it for you.");
-                }
+                throw new InvalidOperationException( "Dispose the precedent SubStream first. I won't do it for you." );
             }
-            _previousSubStream = new SubStream(BaseStream, length, leaveOpen);
+            _previousSubStream = new SubStream( BaseStream, length, true );
             return _previousSubStream;
         }
 

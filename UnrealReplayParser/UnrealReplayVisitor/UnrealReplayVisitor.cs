@@ -32,27 +32,26 @@ namespace UnrealReplayParser
             {
                 await using( ChunkReader? chunkReader = await ParseChunkHeader( replayInfo ) )
                 {
-                    await chunkReader.DumpRemainingBytes();
-                    //if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
-                    //{
-                    //    return true;
-                    //}
-                    //if( chunkReader == null )
-                    //{
-                    //    return false;
-                    //}
-                    //if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
-                    //{
-                    //    return false;
-                    //}
-                    //if( chunkReader.IsError )
-                    //{
-                    //    chunkReader.SetErrorReported();
-                    //    if( !await ErrorOnChunkContentParsingAsync() )
-                    //    {
-                    //        return false;
-                    //    }
-                    //}
+                    if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
+                    {
+                        return true;
+                    }
+                    if( chunkReader == null )
+                    {
+                        return false;
+                    }
+                    if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
+                    {
+                        return false;
+                    }
+                    if( chunkReader.IsError )
+                    {
+                        chunkReader.SetErrorReported();
+                        if( !await ErrorOnChunkContentParsingAsync() )
+                        {
+                            return false;
+                        }
+                    }
                 }
             }
         }
@@ -71,7 +70,7 @@ namespace UnrealReplayParser
         {
             int chunkSize;
             ChunkType chunkType;
-            await using( SubStream chunkHeader = SubStreamFactory.Create( 8, true ) )
+            await using( SubStream chunkHeader = SubStreamFactory.Create( 8 ) )
             await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
             {
                 chunkType = (ChunkType)await binaryReader.ReadUInt32();

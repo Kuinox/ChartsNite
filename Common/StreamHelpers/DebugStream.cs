@@ -1,15 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Common.StreamHelpers
 {
-    public class DebugStream : Stream
+    public class DebugStream : Stream, IAsyncDisposable
     {
         readonly Stream _streamToDebug;
 
-        public DebugStream(Stream streamToDebug)
+        public DebugStream( Stream streamToDebug )
         {
             _streamToDebug = streamToDebug;
         }
@@ -19,24 +20,24 @@ namespace Common.StreamHelpers
             _streamToDebug.Flush();
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read( byte[] buffer, int offset, int count )
         {
-            return _streamToDebug.Read(buffer, offset, count);
+            return _streamToDebug.Read( buffer, offset, count );
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
+        public override long Seek( long offset, SeekOrigin origin )
         {
-            return _streamToDebug.Seek(offset, origin);
+            return _streamToDebug.Seek( offset, origin );
         }
 
-        public override void SetLength(long value)
+        public override void SetLength( long value )
         {
-            _streamToDebug.SetLength(value);
+            _streamToDebug.SetLength( value );
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        public override void Write( byte[] buffer, int offset, int count )
         {
-            _streamToDebug.Write(buffer, offset, count);
+            _streamToDebug.Write( buffer, offset, count );
         }
 
         public override bool CanRead => _streamToDebug.CanRead;
@@ -52,9 +53,13 @@ namespace Common.StreamHelpers
             get => _streamToDebug.Position;
             set => _streamToDebug.Position = value;
         }
-        protected override void Dispose(bool disposing)
+        protected override void Dispose( bool disposing )
         {
-            base.Dispose(disposing);
+            base.Dispose( disposing );
+        }
+        public override ValueTask DisposeAsync()
+        {
+            return base.DisposeAsync();
         }
     }
 }
