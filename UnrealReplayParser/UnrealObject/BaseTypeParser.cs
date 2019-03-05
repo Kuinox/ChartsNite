@@ -15,7 +15,7 @@ namespace UnrealReplayParser.UnrealObject
         }
         public ValueTask<string> Parse()
         {
-            return _binaryReader.ReadString();
+            return _binaryReader.ReadStringAsync();
         }
     }
 
@@ -45,6 +45,6 @@ namespace UnrealReplayParser.UnrealObject
         {
             _binaryReader = binaryReader;
         }
-        public ValueTask<uint> Parse() => _binaryReader.ReadUInt32();
+        public ValueTask<uint> Parse() => _binaryReader.ReadUInt32Async();
     }
 }

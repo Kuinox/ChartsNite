@@ -32,14 +32,14 @@ namespace UnrealReplayParser.Chunk
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns>Readable data uncompresed if it was needed</returns>
-        public virtual async Task<ChunkReader> UncompressDataIfNeeded()//TODO change what i return
+        public virtual async ValueTask<ChunkReader> UncompressDataIfNeeded()//TODO change what i return
         {
             byte[] output;
             if( ReplayInfo.ReplayHeader.Compressed )
             {
-                int decompressedSize = await ReadInt32();
-                int compressedSize = await ReadInt32();
-                byte[] compressedBuffer = await ReadBytes( compressedSize );
+                int decompressedSize = await ReadInt32Async();
+                int compressedSize = await ReadInt32Async();
+                byte[] compressedBuffer = await ReadBytesAsync( compressedSize );
                 output = OodleBinding.Decompress( compressedBuffer, compressedBuffer.Length, decompressedSize );
             }
             else

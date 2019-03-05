@@ -17,14 +17,14 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async Task<bool> ParseEventHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseEventHeader( ChunkReader chunkReader )
         {
-            string id = await chunkReader.ReadString();
-            string group = await chunkReader.ReadString();
-            string metadata = await chunkReader.ReadString();
-            uint time1 = await chunkReader.ReadUInt32();
-            uint time2 = await chunkReader.ReadUInt32();
-            int eventSizeInBytes = await chunkReader.ReadInt32();
+            string id = await chunkReader.ReadStringAsync();
+            string group = await chunkReader.ReadStringAsync();
+            string metadata = await chunkReader.ReadStringAsync();
+            uint time1 = await chunkReader.ReadUInt32Async();
+            uint time2 = await chunkReader.ReadUInt32Async();
+            int eventSizeInBytes = await chunkReader.ReadInt32Async();
             if( chunkReader.IsError || (!chunkReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await ErrorOnParseEventOrCheckpointHeader()) )
             {
                 return false;
@@ -36,7 +36,7 @@ namespace UnrealReplayParser
             }
             return true;
         }
-        public virtual Task<bool> ErrorOnParseEventHeader()
+        public virtual ValueTask<bool> ErrorOnParseEventHeader()
         {
             return ErrorOnChunkContentParsingAsync();
         }
@@ -45,9 +45,9 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns>always <see langword="true"/></returns>
-        public virtual Task<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>(true);
         }
     }
 }

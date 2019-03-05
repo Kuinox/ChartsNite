@@ -76,15 +76,15 @@ namespace ChartsNite.ReplayOrganizer
                         //replayHeaderDumper.DumpValue( headerChunk.HeaderVersion );
                         //replayHeaderDumper.DumpValue( headerChunk.NotSeasonNumber );
                         //replayHeaderDumper.DumpValue( headerChunk.NotVersion );
-                        foreach( byte[] replayDataDump in fortniteDataGrabber.ReplayDataDumps )
-                        {
-                            replayDataDumper.DumpValue(replayHeaderDumper.Row);
-                            replayDataDumper.DumpValue(BitConverter.ToString(replayDataDump));
-                            replayDataDumper.ReturnToNewRow();
-                            replayDataDumper.DumpValue( replayHeaderDumper.Row );
-                            replayDataDumper.DumpValue( Encoding.ASCII.GetString( replayDataDump ) );
-                            replayDataDumper.ReturnToNewRow();
-                        }
+                        //foreach( byte[] replayDataDump in fortniteDataGrabber.ReplayDataDumps )
+                        //{
+                        //    replayDataDumper.DumpValue(replayHeaderDumper.Row);
+                        //    replayDataDumper.DumpValue(BitConverter.ToString(replayDataDump));
+                        //    replayDataDumper.ReturnToNewRow();
+                        //    replayDataDumper.DumpValue( replayHeaderDumper.Row );
+                        //    replayDataDumper.DumpValue( Encoding.ASCII.GetString( replayDataDump ) );
+                        //    replayDataDumper.ReturnToNewRow();
+                        //}
                         int ij = 0;
                         foreach( byte[] checkpointDump in fortniteDataGrabber.CheckpointsDumps )
                         {

@@ -20,7 +20,7 @@ namespace UnrealReplayParser
     {
         protected const uint FileMagic = 0x1CA2E27F;
         protected const uint DemoHeaderMagic = 0x2CF5A13D;
-        public virtual async Task<bool> Visit()
+        public virtual async ValueTask<bool> Visit()
         {
             ReplayInfo? replayInfo = await ParseReplayInfo();
             if( replayInfo == null )
@@ -30,7 +30,7 @@ namespace UnrealReplayParser
             return await VisitReplayChunks( replayInfo );
         }
 
-        public virtual async Task<ReplayInfo?> ParseReplayInfo()
+        public virtual async ValueTask<ReplayInfo?> ParseReplayInfo()
         {
             await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true ) )
             {
@@ -60,27 +60,27 @@ namespace UnrealReplayParser
             }
         }
 
-        public virtual async Task<ReplayHeader?> ParseReplayHeader( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<ReplayHeader?> ParseReplayHeader( CustomBinaryReaderAsync binaryReader )
         {
             if( !await ParseMagicNumber( binaryReader ) )
             {
                 return null;
             }
-            ReplayHeader.ReplayVersionHistory fileVersion = (ReplayHeader.ReplayVersionHistory)await binaryReader.ReadUInt32();
-            int lengthInMs = await binaryReader.ReadInt32();
-            uint networkVersion = await binaryReader.ReadUInt32();
-            uint changelist = await binaryReader.ReadUInt32();
-            string friendlyName = await binaryReader.ReadString();
-            bool isLive = await binaryReader.ReadUInt32() != 0;
+            ReplayHeader.ReplayVersionHistory fileVersion = (ReplayHeader.ReplayVersionHistory)await binaryReader.ReadUInt32Async();
+            int lengthInMs = await binaryReader.ReadInt32Async();
+            uint networkVersion = await binaryReader.ReadUInt32Async();
+            uint changelist = await binaryReader.ReadUInt32Async();
+            string friendlyName = await binaryReader.ReadStringAsync();
+            bool isLive = await binaryReader.ReadUInt32Async() != 0;
             DateTime timestamp = DateTime.MinValue;
             if( fileVersion >= ReplayHeader.ReplayVersionHistory.recordedTimestamp )
             {
-                timestamp = DateTime.FromBinary( await binaryReader.ReadInt64() );
+                timestamp = DateTime.FromBinary( await binaryReader.ReadInt64Async() );
             }
             bool compressed = false;
             if( fileVersion >= ReplayHeader.ReplayVersionHistory.compression )
             {
-                compressed = await binaryReader.ReadUInt32() != 0;
+                compressed = await binaryReader.ReadUInt32Async() != 0;
             }
             return new ReplayHeader( lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
             isLive, compressed, fileVersion );
@@ -89,27 +89,27 @@ namespace UnrealReplayParser
         /// Error occured while parsing the header.
         /// </summary>
         /// <returns></returns>
-        public virtual Task<bool> ErrorOnReplayHeaderParsing()
+        public virtual ValueTask<bool> ErrorOnReplayHeaderParsing()
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
         /// <summary>
         /// I don't know maybe you want to change that ? Why i did this ? I don't know me too.
         /// </summary>
         /// <param name="binaryReader"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ParseMagicNumber( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseMagicNumber( CustomBinaryReaderAsync binaryReader )
         {
-            return await VisitMagicNumber( await binaryReader.ReadUInt32() );
+            return await VisitMagicNumber( await binaryReader.ReadUInt32Async() );
         }
         /// <summary>
         /// Check that the magic number is equal to <see cref="FileMagic"/>
         /// </summary>
         /// <param name="magicNumber"></param>
         /// <returns><see langword="true"/> if the magic number is correct.</returns>
-        public virtual Task<bool> VisitMagicNumber( uint magicNumber )
+        public virtual ValueTask<bool> VisitMagicNumber( uint magicNumber )
         {
-            return Task.FromResult( magicNumber == FileMagic );
+            return new ValueTask<bool>( magicNumber == FileMagic );
         }
 
         
@@ -121,31 +121,31 @@ namespace UnrealReplayParser
         /// <returns></returns>
         public virtual async ValueTask<DemoHeader?> ParseGameSpecificHeaderChunk( ChunkReader chunkReader )
         {
-            if( await chunkReader.ReadUInt32() != DemoHeaderMagic )
+            if( await chunkReader.ReadUInt32Async() != DemoHeaderMagic )
             {
                 return null;
             }
-            NetworkVersionHistory version = (NetworkVersionHistory)await chunkReader.ReadUInt32();
+            NetworkVersionHistory version = (NetworkVersionHistory)await chunkReader.ReadUInt32Async();
             if( version < NetworkVersionHistory.saveFullEngineVersion )
             {
                 return null;
             }
-            uint networkChecksum = await chunkReader.ReadUInt32();
-            uint engineNetworkProtocolVersion = await chunkReader.ReadUInt32();
-            uint gameNetworkProtocolVerrsion = await chunkReader.ReadUInt32();
+            uint networkChecksum = await chunkReader.ReadUInt32Async();
+            uint engineNetworkProtocolVersion = await chunkReader.ReadUInt32Async();
+            uint gameNetworkProtocolVerrsion = await chunkReader.ReadUInt32Async();
             byte[] guid = new byte[0];
             if( version >= NetworkVersionHistory.guidDemoHeader )
             {
-                guid = await chunkReader.ReadBytes( 16 );
+                guid = await chunkReader.ReadBytesAsync( 16 );
             }
             ushort major = await chunkReader.ReadUInt16();
             ushort minor = await chunkReader.ReadUInt16();
             ushort patch = await chunkReader.ReadUInt16();
-            uint changeList = await chunkReader.ReadUInt32();
-            string branch = await chunkReader.ReadString();
+            uint changeList = await chunkReader.ReadUInt32Async();
+            string branch = await chunkReader.ReadStringAsync();
             (string, uint)[] levelNamesAndTimes = await new ArrayParser<(string, uint), TupleParser<StringParser, UInt32Parser, string, uint>>( chunkReader, new TupleParser<StringParser, UInt32Parser, string, uint>( new StringParser( chunkReader ), new UInt32Parser( chunkReader ) ) ).Parse();
             //Headerflags
-            ReplayHeaderFlags replayHeaderFlags = (ReplayHeaderFlags)await chunkReader.ReadUInt32();
+            ReplayHeaderFlags replayHeaderFlags = (ReplayHeaderFlags)await chunkReader.ReadUInt32Async();
             string[] gameSpecificData = await new ArrayParser<string, StringParser>( chunkReader, new StringParser( chunkReader ) ).Parse();
             return new DemoHeader(version, networkChecksum, engineNetworkProtocolVersion, gameNetworkProtocolVerrsion, guid, major, minor, patch, changeList, branch, levelNamesAndTimes, replayHeaderFlags, gameSpecificData);
         }

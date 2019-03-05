@@ -19,7 +19,7 @@ namespace UnrealReplayParser.UnrealObject
         }
         public async ValueTask<TParsedValue[]> Parse()
         {
-            int length = await _binaryReader.ReadInt32();
+            int length = await _binaryReader.ReadInt32Async();
             Debug.Assert( length >= 0 );
             TParsedValue[] output = new TParsedValue[length];
             for( int i = 0; i < length; i++ )

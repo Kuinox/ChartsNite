@@ -18,6 +18,8 @@ namespace UnrealReplayParser.Tests
         public static IEnumerable<(Type, string)> ParserProvider() => new ReplayFetcher().GetAllReplaysStreamsWithAllParsers();
 
 
+
+
         [Test, TestCaseSource( nameof( ParserProvider ) )]
         public async Task NoExceptionWhileReading( (Type, string) tuple )
         {

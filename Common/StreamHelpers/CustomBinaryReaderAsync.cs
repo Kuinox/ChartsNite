@@ -7,19 +7,17 @@ using System.Threading.Tasks;
 
 namespace Common.StreamHelpers
 {
-    public class CustomBinaryReaderAsync : IAsyncDisposable
+    public class CustomBinaryReaderAsync : IAsyncDisposable, IDisposable
     {
         public readonly Stream BaseStream;
         readonly bool _leaveOpen;
-        private readonly Func<Task>? _errorFunc;
         string? _errorDescription;
         bool _fatal;
         bool _errorReported = true;
-        public CustomBinaryReaderAsync( Stream stream, bool leaveOpen = false, Func<Task>? errorAction = null )
+        public CustomBinaryReaderAsync( Stream stream, bool leaveOpen = false)
         {
             BaseStream = stream;
             _leaveOpen = leaveOpen;
-            _errorFunc = errorAction;
         }
 
         public bool IsError => !string.IsNullOrWhiteSpace( _errorDescription ) || _fatal;
@@ -53,17 +51,13 @@ namespace Common.StreamHelpers
         /// false to append it (as a cause: [previous] &lt;-- [added])</param>
         /// <param name="callerName">Name of the caller (automatically injected by the compiler).</param>
         /// <returns>Always false to use it as the return statement in a match method.</returns>
-        public async Task<bool> AddError( object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null )
+        public bool AddError( object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null )
         {
             if( !EndOfStream )
             {
 
             }
             _errorReported = false;
-            if( _errorFunc != null )
-            {
-                await _errorFunc();
-            }
             if( fatal )
             {
                 SetFatal();
@@ -100,7 +94,7 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="count"></param>
         /// <returns>Asked bytes, then zeros if there was no enough, in this case, the <see cref="BinaryReader"/></returns>
-        public async Task<byte[]> ReadBytes( int count )
+        public async ValueTask<byte[]> ReadBytesAsync( int count )
         {
             if(count<0)
             {
@@ -115,7 +109,7 @@ namespace Common.StreamHelpers
                 {
                     if( EndOfStream )
                     {
-                        await AddError( "No more bytes to read", true, true );
+                        AddError( "No more bytes to read", true, true );
                         break;
                     }
                     EndOfStream = true;
@@ -126,36 +120,71 @@ namespace Common.StreamHelpers
             return buffer;
         }
 
-        public Task<byte[]> DumpRemainingBytes()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns>Asked bytes, then zeros if there was no enough, in this case, the <see cref="BinaryReader"/></returns>
+        public byte[] ReadBytes( int count )
         {
-            return ReadBytes( (int)(BaseStream.Length - BaseStream.Position));
+            if( count < 0 )
+            {
+                throw new ArgumentException( "Cannot read a negative amount." );
+            }
+            byte[] buffer = new byte[count];
+            int toRead = count;
+            while( toRead > 0 )
+            {
+                int read = BaseStream.Read( buffer, count - toRead, count );
+                if( read == 0 )
+                {
+                    if( EndOfStream )
+                    {
+                        AddError( "No more bytes to read", true, true );
+                        break;
+                    }
+                    EndOfStream = true;
+                    break;
+                }
+                toRead -= read;
+            }
+            return buffer;
+        }
+
+        public ValueTask<byte[]> DumpRemainingBytes()
+        {
+            return ReadBytesAsync( (int)(BaseStream.Length - BaseStream.Position));
         }
         #region ReadNumbers
-        public async ValueTask<uint> ReadUInt32() => BitConverter.ToUInt32( await ReadBytes( 4 ), 0 );
-        public async Task<int> ReadInt32() => BitConverter.ToInt32( await ReadBytes( 4 ), 0 );
-        public async Task<byte> ReadOneByte() => (await ReadBytes( 1 ))[0];
+        public async ValueTask<uint> ReadUInt32Async() => BitConverter.ToUInt32( await ReadBytesAsync( 4 ), 0 );
+        public uint ReadUInt32() => BitConverter.ToUInt32( ReadBytes( 4 ), 0 );
+        public async ValueTask<int> ReadInt32Async() => BitConverter.ToInt32( await ReadBytesAsync( 4 ), 0 );
+        public int ReadInt32() => BitConverter.ToInt32( ReadBytes( 4 ), 0 );
+        public async ValueTask<byte> ReadOneByteAsync() => (await ReadBytesAsync( 1 ))[0];
+        public byte ReadOneByte() => ReadBytes( 1 )[0];
+        public async ValueTask<float> ReadSingleAsync() => BitConverter.ToSingle( await ReadBytesAsync( 4 ), 0 );
+        public float ReadSingle() => BitConverter.ToSingle( ReadBytes( 4 ), 0 );
 
-        public async Task<float> ReadSingle() => BitConverter.ToSingle( await ReadBytes( 4 ), 0 );
-        public async Task<short> ReadInt16() => BitConverter.ToInt16( await ReadBytes( 2 ), 0 );
-        public async Task<ushort> ReadUInt16() => BitConverter.ToUInt16( await ReadBytes( 2 ), 0 );
-        public async Task<long> ReadInt64() => BitConverter.ToInt64( await ReadBytes( 8 ), 0 );
-
+        public async ValueTask<short> ReadInt16() => BitConverter.ToInt16( await ReadBytesAsync( 2 ), 0 );
+        public async ValueTask<ushort> ReadUInt16() => BitConverter.ToUInt16( await ReadBytesAsync( 2 ), 0 );
+        public async ValueTask<long> ReadInt64Async() => BitConverter.ToInt64( await ReadBytesAsync( 8 ), 0 );
+        public long ReadInt64() => BitConverter.ToInt64( ReadBytes( 8 ), 0 );
 
 
         #endregion ReadNumbers
 
         #region ReadStructs
-        public async ValueTask<string> ReadString()
+        public async ValueTask<string> ReadStringAsync()
         {
-            int length = await ReadInt32();
+            int length = await ReadInt32Async();
             if( length == -2147483648 )//if we reverse this, it has an
             {
-                await AddError( "The size of the string has an invalid value" );
+                AddError( "The size of the string has an invalid value" );
                 return "";
             }
             if( length > BaseStream.Length + BaseStream.Position || length < 0 && -length > BaseStream.Length + BaseStream.Position )
             {
-                await AddError( "The size of the string was bigger than the stream. Probably not a string." );
+                AddError( "The size of the string was bigger than the stream. Probably not a string." );
                 return "";
             }
             if( length == 0 )
@@ -169,17 +198,51 @@ namespace Common.StreamHelpers
             if( isUnicode )
             {
                 length = -length;
-                data = await ReadBytes( length * 2 );
+                data = await ReadBytesAsync( length * 2 );
                 value = Encoding.Unicode.GetString( data );
             }
             else
             {
-                data = await ReadBytes( length );
+                data = await ReadBytesAsync( length );
                 value = Encoding.Default.GetString( data );
             }
             return value.Trim( ' ', '\0' );
         }
 
+        public string ReadString()
+        {
+            int length = ReadInt32();
+            if( length == -2147483648 )//if we reverse this, it has an
+            {
+                AddError( "The size of the string has an invalid value" );
+                return "";
+            }
+            if( length > BaseStream.Length + BaseStream.Position || length < 0 && -length > BaseStream.Length + BaseStream.Position )
+            {
+                AddError( "The size of the string was bigger than the stream. Probably not a string." );
+                return "";
+            }
+            if( length == 0 )
+            {
+                return "";
+            }
+
+            bool isUnicode = length < 0;
+            byte[] data;
+            string value;
+            if( isUnicode )
+            {
+                length = -length;
+                data = ReadBytes( length * 2 );
+                value = Encoding.Unicode.GetString( data );
+            }
+            else
+            {
+                data = ReadBytes( length );
+                value = Encoding.Default.GetString( data );
+            }
+            return value.Trim( ' ', '\0' );
+        }
         public class NetFieldExport
         {
             NetFieldExport( bool exported, uint handle, uint compatibleChecksum, string name, string type )
@@ -205,7 +268,7 @@ namespace Common.StreamHelpers
         /// In UnrealEngine source code: void FArchive::SerializeIntPacked( uint32& Value )
         /// </summary>
         /// <returns></returns>
-        public async Task<uint> ReadIntPacked()
+        public async ValueTask<uint> ReadIntPackedAsync()
         {
             uint value = 0;
             byte count = 0;
@@ -213,7 +276,26 @@ namespace Common.StreamHelpers
 
             while( more )
             {
-                byte nextByte = await ReadOneByte();
+                byte nextByte = await ReadOneByteAsync();
+                more = (nextByte & 1) == 1;         // Check 1 bit to see if theres more after this
+                nextByte >>= 1;           // Shift to get actual 7 bit value
+                value += (uint)nextByte << (7 * count++); // Add to total value
+            }
+            return value;
+        }
+        /// <summary>
+        /// In UnrealEngine source code: void FArchive::SerializeIntPacked( uint32& Value )
+        /// </summary>
+        /// <returns></returns>
+        public uint ReadIntPacked()
+        {
+            uint value = 0;
+            byte count = 0;
+            bool more = true;
+
+            while( more )
+            {
+                byte nextByte = ReadOneByte();
                 more = (nextByte & 1) == 1;         // Check 1 bit to see if theres more after this
                 nextByte >>= 1;           // Shift to get actual 7 bit value
                 value += (uint)nextByte << (7 * count++); // Add to total value
@@ -221,17 +303,17 @@ namespace Common.StreamHelpers
             return value;
         }
 
-        public async Task<NetFieldExport> ReadNetFieldExport()
+        public NetFieldExport ReadNetFieldExport()
         {
-            bool exported = 1 == await ReadOneByte();
+            bool exported = 1 == ReadOneByte();
             if( !exported )
             {
                 return NetFieldExport.InitializeNotExported();
             }
-            uint handle = await ReadIntPacked();
-            uint compatibleChecksum = await ReadUInt32();
-            string name = await ReadString();
-            string type = await ReadString();
+            uint handle = ReadIntPacked();
+            uint compatibleChecksum = ReadUInt32();
+            string name = ReadString();
+            string type = ReadString();
             return NetFieldExport.InitializeExported( handle, compatibleChecksum, name, type );
         }
 
@@ -244,6 +326,18 @@ namespace Common.StreamHelpers
             if( !_leaveOpen )
             {
                 await BaseStream.DisposeAsync();
+            }
+        }
+
+        public void Dispose()
+        {
+            if( !_errorReported )
+            {
+                throw new InvalidOperationException( "You must report errors before Diposing" );
+            }
+            if( !_leaveOpen )
+            {
+                BaseStream.Dispose();
             }
         }
 

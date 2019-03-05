@@ -26,7 +26,7 @@ namespace UnrealReplayParser
         }
 
         #region ReplayContentParsing
-        public virtual async Task<bool> VisitReplayChunks( ReplayInfo replayInfo )
+        public virtual async ValueTask<bool> VisitReplayChunks( ReplayInfo replayInfo )
         {
             while( true )
             {
@@ -73,13 +73,13 @@ namespace UnrealReplayParser
             await using( SubStream chunkHeader = SubStreamFactory.Create( 8 ) )
             await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
             {
-                chunkType = (ChunkType)await binaryReader.ReadUInt32();
+                chunkType = (ChunkType)await binaryReader.ReadUInt32Async();
                 if( binaryReader.EndOfStream )
                 {
                     binaryReader.SetErrorReported();
                     return new ChunkReader(ChunkType.EndOfStream, replayInfo);
                 }
-                chunkSize = await binaryReader.ReadInt32();
+                chunkSize = await binaryReader.ReadInt32Async();
                 if( binaryReader.IsError || (uint)chunkType > 3 )
                 {
                     binaryReader.SetErrorReported();
@@ -96,7 +96,7 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ChooseChunkType( ChunkReader chunkReader, ChunkType chunkType )
+        public virtual async ValueTask<bool> ChooseChunkType( ChunkReader chunkReader, ChunkType chunkType )
         {
             return (chunkType switch
             {
@@ -111,9 +111,9 @@ namespace UnrealReplayParser
         /// Error inside chunk content parsing
         /// </summary>
         /// <returns></returns>
-        public virtual Task<bool> ErrorOnChunkContentParsingAsync()
+        public virtual ValueTask<bool> ErrorOnChunkContentParsingAsync()
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>(true);
         }
         /// <summary>
         /// Error inside chunk content parsing
@@ -134,9 +134,9 @@ namespace UnrealReplayParser
         /// <param name="chunkType"></param>
         /// <param name="sizeInBytes"></param>
         /// <returns>if the Visitor can safely continue is job, return always false if not overriden</returns>
-        public virtual Task<bool> VisitCorruptedChunk( Stream replayStream, ChunkType chunk )
+        public virtual ValueTask<bool> VisitCorruptedChunk( Stream replayStream, ChunkType chunk )
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
 
         /// <summary>
@@ -145,9 +145,9 @@ namespace UnrealReplayParser
         /// If you don't touch the <see cref="SubStreamFactory"/> it can't continue it's job.
         /// </summary>
         /// <returns><see langword="false"/>if not overidden</returns>
-        public virtual Task<bool> VisitEndOfStream()
+        public virtual ValueTask<bool> VisitEndOfStream()
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
 
         /// <summary>
@@ -156,9 +156,9 @@ namespace UnrealReplayParser
         /// <param name="chunkType">May have a bad value</param>
         /// <param name="sizeInBytes">May have a bad value</param>
         /// <returns>Always false.</returns>
-        public virtual Task<bool> VisitIncompleteChunkHeader( ChunkType chunk )
+        public virtual ValueTask<bool> VisitIncompleteChunkHeader( ChunkType chunk )
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
         #endregion ChunkHeaderErrorHandling
         #endregion ChunkHeaderParsing

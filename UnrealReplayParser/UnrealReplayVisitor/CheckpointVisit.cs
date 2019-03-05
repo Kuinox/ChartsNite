@@ -16,14 +16,14 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async Task<bool> ParseCheckpointHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseCheckpointHeader( ChunkReader chunkReader )
         {
-            string id = await chunkReader.ReadString();
-            string group = await chunkReader.ReadString();
-            string metadata = await chunkReader.ReadString();
-            uint time1 = await chunkReader.ReadUInt32();
-            uint time2 = await chunkReader.ReadUInt32();
-            int eventSizeInBytes = await chunkReader.ReadInt32();
+            string id = await chunkReader.ReadStringAsync();
+            string group = await chunkReader.ReadStringAsync();
+            string metadata = await chunkReader.ReadStringAsync();
+            uint time1 = await chunkReader.ReadUInt32Async();
+            uint time2 = await chunkReader.ReadUInt32Async();
+            int eventSizeInBytes = await chunkReader.ReadInt32Async();
             if( chunkReader.IsError && !await ErrorOnParseEventOrCheckpointHeader() || (!chunkReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await ErrorOnParseEventOrCheckpointHeader()) )
             {
                 return false;
@@ -31,12 +31,12 @@ namespace UnrealReplayParser
             return await ParseCheckpointContent( await chunkReader.UncompressDataIfNeeded(), id, group, metadata, time1, time2 );
         }
 
-        public virtual Task<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
+        public virtual ValueTask<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>(true);
         }
 
-        public virtual Task<bool> ErrorOnParseEventOrCheckpointHeader()
+        public virtual ValueTask<bool> ErrorOnParseEventOrCheckpointHeader()
         {
             return ErrorOnChunkContentParsingAsync();
         }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.StreamHelpers;
+using Force.Crc32;
 using UnrealReplayParser.Chunk;
 using static UnrealReplayParser.ReplayHeader;
 
@@ -18,29 +19,46 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async Task<bool> ParseReplayDataChunkHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseReplayDataChunkHeader( ChunkReader chunkReader )
         {
             bool correctSize = true;
             uint time1 = uint.MaxValue;
             uint time2 = uint.MaxValue;
             if( chunkReader.ReplayInfo.ReplayHeader.FileVersion >= ReplayVersionHistory.streamChunkTimes )
             {
-                time1 = await chunkReader.ReadUInt32();
-                time2 = await chunkReader.ReadUInt32();
-                int replaySizeInBytes = await chunkReader.ReadInt32();
+                time1 = await chunkReader.ReadUInt32Async();
+                time2 = await chunkReader.ReadUInt32Async();
+                int replaySizeInBytes = await chunkReader.ReadInt32Async();
                 correctSize = chunkReader.AssertRemainingCountOfBytes( replaySizeInBytes );
             }
             if( chunkReader.IsError || !correctSize && !ErrorOnParseReplayDataChunk() )
             {
                 return false;
             }
-            return await ParseReplayData( await chunkReader.UncompressDataIfNeeded(), new ReplayDataInfo( time1, time2 ) ); ;
+            using( ChunkReader uncompressedData = await chunkReader.UncompressDataIfNeeded() )
+            {
+               return ParseReplayData(uncompressedData);
+            }
+            
         }
 
         public virtual bool ErrorOnParseReplayDataChunk()
         {
             return ErrorOnChunkContentParsing();
         }
+
+        public virtual bool ParseReplayData(ChunkReader chunkReader)
+        {
+            while( !chunkReader.EndOfStream )
+            {
+                if(!ParsePlaybackPacket(chunkReader))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         /// <summary>
         /// Was writed to support how Fortnite store replays.
         /// This may need to be upgrade to support other games, or some future version of Fortnite.
@@ -48,59 +66,121 @@ namespace UnrealReplayParser
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns></returns>
-        public virtual async Task<bool> ParseReplayData( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        public virtual bool ParsePlaybackPacket( ChunkReader chunkReader )
         {
-            int currentLevelIndex = await binaryReader.ReadInt32();//TODO: use replayVersion.
-            float timeSeconds = await binaryReader.ReadSingle();
-            await ParseReceiveData( binaryReader, replayDataInfo );//TODO: use replayVersion.
+            bool appendPacket = true;
+            bool hasLevelStreamingFixes = true;//TODO: this method
+            int currentLevelIndex = chunkReader.ReadInt32();//TODO: use replayVersion. HasLevelStreamingFixes
+            float timeSeconds = chunkReader.ReadSingle();
+            ParseExportData( chunkReader );//TODO: use replayVersion. HasLevelStreamingFixes
+            if( (chunkReader.ReplayInfo.DemoHeader.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) > 0 )
+            {
+                uint levelAddedThisFrameCount = chunkReader.ReadIntPacked();
+                for( int i = 0; i < levelAddedThisFrameCount; i++ )
+                {
+                    string levelName = chunkReader.ReadString();
+                }
+            }
+            else
+            {
+                throw new NotSupportedException( "TODO" );
+            }
+            long skipExternalOffset = 0;
+            if( hasLevelStreamingFixes ) //TODO HasLevelStreamingFixes
+            {
+                skipExternalOffset = chunkReader.ReadInt64();
+            }
 
+            ParseExternalData( chunkReader );//there is a branch on fastForward
+            uint seenLevelIndex = 0;
+
+            while( true )
+            {
+                if( hasLevelStreamingFixes )
+                {
+                    seenLevelIndex = chunkReader.ReadIntPacked();
+                }
+                (bool success, int amount) = ParsePacket( chunkReader );
+                if( amount == 0 ) break;
+                if( appendPacket ) continue;
+            }//There is more data ?
             return true;
         }
 
-        public virtual async Task<bool> ParseReceiveData( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        public virtual (bool success, int amount) ParsePacket( ChunkReader chunkReader )
         {
-            return await ParseNetFieldExports( binaryReader, replayDataInfo )
-                && await ParseNetExportGUIDs( binaryReader, replayDataInfo );
+            const int MaxBufferSize = 2 * 1024;
+            int outBufferSize = chunkReader.ReadInt32();
+            if( outBufferSize > MaxBufferSize || outBufferSize < 0 )
+            {
+                throw new InvalidDataException( "Invalid packet size" );
+            }
+            if( outBufferSize == 0 ) return (true, outBufferSize);
+            byte[] outBuffer = chunkReader.ReadBytes( outBufferSize );
+            return (true, outBufferSize);
         }
 
-        public virtual async Task<bool> ParseNetFieldExports( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+
+
+        public virtual bool ParseExternalData( ChunkReader chunkReader )
         {
-            uint exportCout = await binaryReader.ReadIntPacked();
+            while( true )
+            {
+                uint externalDataBitsCount = chunkReader.ReadIntPacked();
+                if( externalDataBitsCount == 0 )
+                {
+                    return true;
+                }
+                uint netGuid = chunkReader.ReadIntPacked();
+                int byteCount = (int)(externalDataBitsCount + 7) >> 3;
+                byte[] burnBytes = chunkReader.ReadBytes( byteCount );//We dont do anything with it yet.
+            }
+        }
+
+        public virtual bool ParseExportData( CustomBinaryReaderAsync binaryReader )
+        {
+            return ParseNetFieldExports( binaryReader )
+                && ParseNetExportGUIDs( binaryReader );
+        }
+
+        public virtual bool ParseNetFieldExports( CustomBinaryReaderAsync binaryReader )
+        {
+            uint exportCout = binaryReader.ReadIntPacked();
             for( int i = 0; i < exportCout; i++ )
             {
-                uint pathNameIndex = await binaryReader.ReadIntPacked();
-                uint wasExported = await binaryReader.ReadIntPacked();
+                uint pathNameIndex = binaryReader.ReadIntPacked();
+                uint wasExported = binaryReader.ReadIntPacked();
                 if( wasExported > 0 )
                 {
-                    string pathName = await binaryReader.ReadString();
-                    uint numExports = await binaryReader.ReadIntPacked();
+                    string pathName = binaryReader.ReadString();
+                    uint numExports = binaryReader.ReadIntPacked();
                 }
                 else
                 {
                     //We does nothing here but Unreal does something
                 }
-                var netExports = await binaryReader.ReadNetFieldExport();
+                var netExports = binaryReader.ReadNetFieldExport();
             }
             if( binaryReader.IsError )
             {
-                return await ErrorOnParseNetFieldExports();
+                return ErrorOnParseNetFieldExports();
             }
             return true;
         }
 
-        public virtual async Task<bool> ParseNetExportGUIDs( CustomBinaryReaderAsync binaryReader, ReplayDataInfo replayDataInfo )
+        public virtual bool ParseNetExportGUIDs( CustomBinaryReaderAsync binaryReader )
         {
-            uint guidCount = await binaryReader.ReadIntPacked();
+            uint guidCount = binaryReader.ReadIntPacked();
             for( int i = 0; i < guidCount; i++ )
             {
-                byte[] guidData = await binaryReader.ReadBytes( await binaryReader.ReadInt32() );
+                byte[] guidData = binaryReader.ReadBytes( binaryReader.ReadInt32() );
                 //TODO: use memory reader
             }
             return true;
         }
-        public virtual Task<bool> ErrorOnParseNetFieldExports()
+        public virtual bool ErrorOnParseNetFieldExports()
         {
-            return Task.FromResult( ErrorOnParseReplayDataChunk() );
+            return  ErrorOnParseReplayDataChunk();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace FortniteReplayParser
         }
 
 
-        public override Task<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
+        public override ValueTask<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
         {
             "playerElim" => VisitPlayerElimChunk( chunkReader, eventInfo ),
             "AthenaMatchStats" => VisitAthenaMatchStats( eventInfo ),
@@ -28,36 +28,36 @@ namespace FortniteReplayParser
             "fortBenchEvent" => VisitFortBenchEvent( chunkReader, eventInfo ),
             _ => VisitUnknowEventChunkType( chunkReader, eventInfo )
         };
-        public virtual Task<bool> VisitFortBenchEvent( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitFortBenchEvent( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual Task<bool> VisitPlayerStateEncryptionKey( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitPlayerStateEncryptionKey( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual Task<bool> VisitAthenaReplayBrowserEvents( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitAthenaReplayBrowserEvents( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual Task<bool> VisitUnknowEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitUnknowEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
 
-        public virtual Task<bool> VisitCheckPoint( EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitCheckPoint( EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual Task<bool> VisitAthenaMatchStats( EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitAthenaMatchStats( EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual Task<bool> VisitAthenaMatchTeamStats( EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitAthenaMatchTeamStats( EventOrCheckpointInfo eventInfo )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
-        public virtual async Task<bool> VisitPlayerElimChunk( ChunkReader binaryReader, EventOrCheckpointInfo eventInfo )
+        public virtual async ValueTask<bool> VisitPlayerElimChunk( ChunkReader binaryReader, EventOrCheckpointInfo eventInfo )
         {
             int amountToSkip;
             switch( binaryReader.ReplayInfo.DemoHeader.Branch )
@@ -72,22 +72,22 @@ namespace FortniteReplayParser
                     amountToSkip = 45;
                     break;
             }
-            byte[] unknownData = await binaryReader.ReadBytes( amountToSkip );
-            string killed = await binaryReader.ReadString();
-            string killer = await binaryReader.ReadString();
-            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByte();
-            PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32();
+            byte[] unknownData = await binaryReader.ReadBytesAsync( amountToSkip );
+            string killed = await binaryReader.ReadStringAsync();
+            string killer = await binaryReader.ReadStringAsync();
+            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByteAsync();
+            PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32Async();
             return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
         }
 
-        public virtual Task<bool> VisitPlayerElimResult( PlayerElimChunk playerElim )
+        public virtual ValueTask<bool> VisitPlayerElimResult( PlayerElimChunk playerElim )
         {
-            return Task.FromResult( true );
+            return new ValueTask<bool>( true );
         }
 
-        public virtual Task<bool> VisitHeaderChunkWhereWeDidntReadAllData()
+        public virtual ValueTask<bool> VisitHeaderChunkWhereWeDidntReadAllData()
         {
-            return Task.FromResult( false );
+            return new ValueTask<bool>( false );
         }
     }
 }
