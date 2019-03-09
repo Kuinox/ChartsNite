@@ -30,6 +30,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnrealReplayParser.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.ReplayOrganizer", "ChartsNite.ReplayOrganizer\ChartsNite.ReplayOrganizer.csproj", "{4344C4DF-5800-428E-ABDA-D1859EC618DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.Tests", "Tests\Common.Tests\Common.Tests.csproj", "{687CA695-B432-479C-A047-A3BFC1983673}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,6 +70,10 @@ Global
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4344C4DF-5800-428E-ABDA-D1859EC618DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{687CA695-B432-479C-A047-A3BFC1983673}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{687CA695-B432-479C-A047-A3BFC1983673}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{687CA695-B432-479C-A047-A3BFC1983673}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{687CA695-B432-479C-A047-A3BFC1983673}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,6 +81,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{63CC7ECB-96C8-4798-AB10-08232D9D25A9} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
+		{687CA695-B432-479C-A047-A3BFC1983673} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {388BDD38-DF1F-46A1-9358-B6E565FB7D9E}

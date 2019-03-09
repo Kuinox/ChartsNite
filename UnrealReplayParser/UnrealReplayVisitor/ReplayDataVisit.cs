@@ -37,9 +37,9 @@ namespace UnrealReplayParser
             }
             using( ChunkReader uncompressedData = await chunkReader.UncompressDataIfNeeded() )
             {
-               return ParseReplayData(uncompressedData);
+                return ParseReplayData( uncompressedData );
             }
-            
+
         }
 
         public virtual bool ErrorOnParseReplayDataChunk()
@@ -47,11 +47,11 @@ namespace UnrealReplayParser
             return ErrorOnChunkContentParsing();
         }
 
-        public virtual bool ParseReplayData(ChunkReader chunkReader)
+        public virtual bool ParseReplayData( ChunkReader chunkReader )
         {
             while( !chunkReader.EndOfStream )
             {
-                if(!ParsePlaybackPacket(chunkReader))
+                if( !ParsePlaybackPacket( chunkReader ) )
                 {
                     return false;
                 }
@@ -120,7 +120,23 @@ namespace UnrealReplayParser
             return (true, outBufferSize);
         }
 
+        public virtual bool ProcessIncomingPacket( BitReader bitReader )
+        {
+            bool handshakePacket = bitReader.ReadBit();
+            if( handshakePacket )
+            {
+                return true;//Never had a handshake packet.
+            }
+            if( bitReader.BitRemaining > 0 )
+            {
 
+            }
+            else
+            {
+                return true;//packet has been consumed
+            }
+            return true;
+        }
 
         public virtual bool ParseExternalData( ChunkReader chunkReader )
         {
@@ -180,7 +196,7 @@ namespace UnrealReplayParser
         }
         public virtual bool ErrorOnParseNetFieldExports()
         {
-            return  ErrorOnParseReplayDataChunk();
+            return ErrorOnParseReplayDataChunk();
         }
     }
 }
