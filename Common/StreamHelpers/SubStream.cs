@@ -8,8 +8,16 @@ namespace Common.StreamHelpers
 {
     public class SubStream : Stream
     {
+        public enum ForceState
+        {
+            Nothing,
+            ForceAsync,
+            ForceSync
+        }
+
         readonly Stream _stream;
         readonly bool _leaveOpen;
+        readonly ForceState _forceState;
         readonly long _startPosition;
         readonly long _maxPosition;
         readonly bool _isPositionAvailable;
@@ -17,30 +25,35 @@ namespace Common.StreamHelpers
         long _relativePosition;
         public bool Disposed { get; private set; }
         /// <summary>
-        /// Please read the stream to end or use <see cref="DisposeAsync"/> if you want to be fully <see langword="async"/>.
+        /// Represent a part of a Base <see cref="Stream"/>. Provide some safety features:
+        /// Avoid OverReading(If you try to read to much, the Read methods will return you 0 like a <see cref="Stream"/> when you reach the EndOfStream)
+        /// Watch Base Stream Position(If the BaseStream Position is available, each call to this object will check if the Position of the BaseStream have moved)
+        /// 
         /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="length"></param>
-        /// <param name="leaveOpen"></param>
-        internal SubStream( Stream stream, long length, bool leaveOpen = false )
+        /// <param name="stream">Base <see cref="Stream"/></param>
+        /// <param name="length">Length of this SubStream</param>
+        /// <param name="leaveOpen">if i should leave open the Base <see cref="Stream"/></param>
+        internal SubStream( Stream stream, long length, bool leaveOpen = false, ForceState forceState = ForceState.Nothing )
         {
-            Disposed = false;
-            bool isLengthAvailable;
-            try
+            if(!Enum.IsDefined(typeof(ForceState), forceState))
             {
-                long temp = stream.Length;
-                isLengthAvailable = true;
+                throw new ArgumentException( "Invalid Enum as argument." );
+            }
+            ///Even if some stream have the property CanSeek set to false, they may have their Length or Position available.
+            ///In this case, i will use these properties to increase the safety.
+            try //We test if the length is available. I have no other way to know if i can read the Length.
+            {
+                if( length > stream.Length )
+                {
+                    throw new InvalidOperationException( "Available length is smaller than asked length." );
+                }
             }
             catch( NotSupportedException )
             {
-                isLengthAvailable = false;
-            }
-            if( isLengthAvailable && length > stream.Length )
-            {
-                throw new InvalidOperationException();
+                //We add extra safety if we can read stream.Length. If we can't, not a big deal and we can ignore safely.
             }
 
-            try
+            try //We test if the Position is available. I have no other way to know if i can read the Position.
             {
                 long temp = stream.Position;
                 _isPositionAvailable = true;
@@ -51,8 +64,9 @@ namespace Common.StreamHelpers
             }
             _stream = stream;
             _leaveOpen = leaveOpen;
+            _forceState = forceState;
             Length = length;
-            if( !_isPositionAvailable )
+            if( !_isPositionAvailable )//TODO: When the Position is not available, this may fail
             {
                 return;
             }
@@ -61,9 +75,9 @@ namespace Common.StreamHelpers
             Checks();
         }
         /// <summary>
-        /// Notify to skip all the remaining bytes when Disposing.
+        /// Make the Dispose not move the BaseStream Position
         /// </summary>
-        public void CancelFlush() => _dontFlush = true;
+        public void CancelSelfRepositioning() => _dontFlush = true;
 
         public override void Flush()
         {
@@ -75,6 +89,10 @@ namespace Common.StreamHelpers
         public override int Read( byte[] buffer, int offset, int count )
         {
             Checks();
+            if(_forceState == ForceState.ForceAsync)
+            {
+                throw new InvalidOperationException( "You asked to do Async only." );
+            }
             return ReadWithoutChecks( buffer, offset, count );
         }
 
@@ -93,6 +111,10 @@ namespace Common.StreamHelpers
         public override Task<int> ReadAsync( byte[] buffer, int offset, int count, CancellationToken cancellationToken )
         {
             Checks();
+            if( _forceState == ForceState.ForceSync )
+            {
+                throw new InvalidOperationException( "You asked to do Sync only." );
+            }
             return ReadWithoutChecksAsync( buffer, offset, count, cancellationToken );
         }
 
@@ -160,6 +182,7 @@ namespace Common.StreamHelpers
             Checks();
             _stream.Write( buffer, offset, count );
             _relativePosition += count;
+            throw new NotImplementedException( "TODO." );
         }
 
         public override bool CanRead => _stream.CanRead;
@@ -201,6 +224,10 @@ namespace Common.StreamHelpers
         }
         public override async ValueTask DisposeAsync()
         {
+            if( _forceState == ForceState.ForceSync )
+            {
+                throw new InvalidOperationException( "You asked to do Sync only." );
+            }
             if( Disposed )
             {
                 return;
@@ -211,24 +238,10 @@ namespace Common.StreamHelpers
                 Disposed = true;
                 return;
             }
-            if( !CanRead && !CanSeek )
-            {
-                throw new NotImplementedException(); // we can't do this. so we throw an exception synchronously
-            }
-            //https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
-            int toSkip = (int)(Length - _relativePosition);//Dont use Position, because it check if the object is Disposed.
 
-            if( toSkip == 0 )
-            { //we have nothing to skip
-                Disposed = true;
-                return;
-            }
-            if( CanSeek )
-            {
-                SeekWithoutChecks( Length, SeekOrigin.Begin );
-                Disposed = true;
-                return;//yay ! we could do everything synchronously
-            }
+            //https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
+            int toSkip = TrySyncDispose();
+
             while( toSkip != 0 )
             {
                 int read = await ReadWithoutChecksAsync( new byte[toSkip], 0, toSkip, default );
@@ -240,10 +253,48 @@ namespace Common.StreamHelpers
             }
             Disposed = true;
         }
+        /// <summary>
+        /// Try to Dispose synchronously. If we can't Seek the cursor to the right position we return the amount of byte to move forward.
+        /// </summary>
+        /// <returns>the amount of byte to move forward</returns>
+        int TrySyncDispose()
+        {
+            if( !CanRead && !CanSeek )
+            {
+                throw new NotImplementedException(); // we can't do this. so we throw an exception synchronously
+            }
+            int toSkip = (int)(Length - _relativePosition);//Dont use Position, because it check if the object is Disposed.
+            if( toSkip == 0 )
+            { //we have nothing to skip
+                Disposed = true;
+                return 0;
+            }
+            if( CanSeek )
+            {
+                SeekWithoutChecks( Length, SeekOrigin.Begin );
+                Disposed = true;
+                return 0;
+            }
+            return toSkip;
+        }
 
         protected override void Dispose( bool disposing )
         {
-            throw new NotSupportedException();
+            if( _forceState == ForceState.ForceAsync )
+            {
+                throw new InvalidOperationException( "You asked to do Async only." );
+            }
+            int toSkip = TrySyncDispose();
+            while( toSkip != 0 )
+            {
+                int read = ReadWithoutChecks( new byte[toSkip], 0, toSkip );
+                toSkip -= read;
+                if( read == 0 )
+                {
+                    throw new EndOfStreamException( "Unexpected End of Stream." );
+                }
+            }
+            Disposed = true;
         }
     }
 }
