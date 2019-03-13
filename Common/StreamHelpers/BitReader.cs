@@ -19,7 +19,11 @@ namespace Common.StreamHelpers
             _currentBytePosition = 0;
         }
         byte CurrentByte => _data[_currentBytePosition];
-        public bool this[long i] => ((_data[i / 8] >> (byte)(i % 8)) & 1) == 1;
+        public bool this[long i] => ((
+            _data[i / 8]//We select the correct byte
+            >> (byte)(7-(i % 8)))//we shift to left to get the correct bit.
+            & 1) == 1;//select the byte at the left and convert it to a bool
+
 
         /// <summary>
         /// Read a bit, and move the cursor forward
@@ -41,7 +45,12 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="positionInBit"></param>
         /// <returns> <see langword="true"/> if the position is out of range. </returns>
-        bool IsPositionOutOfRange( long positionInBit ) => positionInBit / 8 == _data.Length && (8 - positionInBit % 8) > _lastByteTruncatedBits;
+        bool IsPositionOutOfRange( long positionInBit )
+        {
+            bool isLastByte =  (int)Math.Ceiling( (double)positionInBit / 8 ) == _data.Length;
+            bool isBitTruncated = (positionInBit % 8)+1 > (8 - _lastByteTruncatedBits);
+            return isLastByte && isBitTruncated;
+        }
 
         /// <summary>
         /// Read a byte of 8 bits, move the cursor forward of 8.
@@ -104,42 +113,26 @@ namespace Common.StreamHelpers
             }
         }
 
-        public static BitReader operator <<(BitReader bitReader, int count )//I shouldn't do thisl ike this.
+        public void ShiftLeft (int count )
         {
             long byteToShift = count/8;
-            byte[] newData = new byte[bitReader._data.Length];
-            Array.Copy(bitReader._data, byteToShift, newData, 0, bitReader._data.Length-byteToShift);
-            bitReader._data = newData;
+            byte[] newData = new byte[_data.Length];
+            Array.Copy(_data, byteToShift, newData, 0, _data.Length-byteToShift);
+            _data = newData;
             byte bitToShift = (byte)(count % 8);
-            for( int i = 0; i + 1 < bitReader._data.Length; i++ )
-            {
-                bitReader._data[i] <<= bitToShift;
-                bitReader._data[i] |= (byte)(bitReader._data[i + 1] >> (8 - bitToShift));
-            }
-            bitReader._data[^1] <<= bitToShift;
-            return bitReader;
-        }
-
-        
-        public void TruncateStart( int amount )
-        {
-            this << amount;
-            int leftByteCountToRemove = amount / 8;//We remove bytes of the bits we are going to truncate
-            if( leftByteCountToRemove > 0 )
-            {
-                byte[] newData = new byte[_data.Length - leftByteCountToRemove];
-                Array.Copy( _data, leftByteCountToRemove, newData, 0, newData.Length );
-                _data = newData;
-            }
-            //Now there is less than a byte to truncate.
-            byte bitToShift = (byte)(amount % 8);//So we will shift them, so we have only byte at the end where we don't use all the bits
             for( int i = 0; i + 1 < _data.Length; i++ )
             {
                 _data[i] <<= bitToShift;
                 _data[i] |= (byte)(_data[i + 1] >> (8 - bitToShift));
             }
             _data[^1] <<= bitToShift;
-            TruncateEnd( bitToShift );//We pushed all the bits to truncate at the end, so we have bitToShift bits to truncate at the end.
+        }
+
+        
+        public void TruncateStart( int amount )
+        {
+            ShiftLeft( amount );
+            TruncateEnd( amount );//We pushed all the bits to truncate at the end, so we have bitToShift bits to truncate at the end.
         }
 
         public long BitPosition
