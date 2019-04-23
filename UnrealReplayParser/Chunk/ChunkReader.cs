@@ -5,23 +5,81 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static UnrealReplayParser.DemoHeader;
 
 namespace UnrealReplayParser.Chunk
 {
-    public class ChunkReader : CustomBinaryReaderAsync
+    public class ChunkReader : CustomBinaryReaderAsync//TODO: only sync
     {
         public readonly ReplayInfo ReplayInfo;
+        public EngineNetworkVersionHistory EngineNetworkProtocolVersion => ReplayInfo.DemoHeader.EngineNetworkProtocolVersion;
         public readonly ChunkType ChunkType;
-        public ChunkReader(ChunkType chunkType, Stream stream, ReplayInfo replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
+        public ChunkReader( ChunkType chunkType, Stream stream, ReplayInfo replayInfo, bool leaveOpen = false ) : base( stream, leaveOpen )
         {
             ReplayInfo = replayInfo;
             ChunkType = chunkType;
         }
 
-        public ChunkReader(ChunkType chunkType, ReplayInfo replayInfo) : base(new MemoryStream(), false)
+        public ChunkReader( ChunkType chunkType, ReplayInfo replayInfo ) : base( new MemoryStream(), false )
         {
             ReplayInfo = replayInfo;
             ChunkType = chunkType;
+        }
+
+        void StaticParseName()
+        {
+            byte b = ReadOneByte();
+            bool hardcoded = b != 0;
+            if( hardcoded )
+            {
+                if( EngineNetworkProtocolVersion < EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
+                {
+                    ReadInt32();
+                }
+                else
+                {
+                    ReadIntPacked();
+                }
+
+                //hard coded names in "UnrealNames.inl"
+            }
+            else
+            {
+                string inString = ReadString();
+                int inNumber = ReadInt32();
+            }
+        }
+
+        public NetFieldExport ReadNetFieldExport()
+        {
+            byte flags = ReadOneByte();
+            bool exported = 1 == flags;
+            if( !exported )
+            {
+                return NetFieldExport.InitializeNotExported();
+            }
+            uint handle = ReadIntPacked();
+            uint compatibleChecksum = ReadUInt32();
+
+            if( EngineNetworkProtocolVersion < EngineNetworkVersionHistory.HISTORY_NETEXPORT_SERIALIZATION )
+            {
+                string name = ReadString();
+                string type = ReadString();
+            }
+            else
+            {
+                if( EngineNetworkProtocolVersion < EngineNetworkVersionHistory.HISTORY_NETEXPORT_SERIALIZE_FIX )
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    StaticParseName();
+                }
+            }
+
+
+            return NetFieldExport.InitializeExported( handle, compatibleChecksum, "", "" );
         }
 
         /// <summary>
@@ -39,14 +97,14 @@ namespace UnrealReplayParser.Chunk
             {
                 int decompressedSize = await ReadInt32Async();
                 int compressedSize = await ReadInt32Async();
-                byte[] compressedBuffer = await ReadBytesAsync( compressedSize );
+                byte[] compressedBuffer = (await ReadBytesAsync( compressedSize )).ToArray();//TODO: Use Memory<T>
                 output = OodleBinding.Decompress( compressedBuffer, compressedBuffer.Length, decompressedSize );
             }
             else
             {
-                output = await DumpRemainingBytes();
+                output = await DumpRemainingBytesAsync();
             }
-            return new ChunkReader(ChunkType, new MemoryStream( output ), ReplayInfo );
+            return new ChunkReader( ChunkType, new MemoryStream( output ), ReplayInfo );
         }
     }
 }

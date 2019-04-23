@@ -8,20 +8,15 @@ namespace Common.StreamHelpers
     public class BitReader
     {
         byte[] _data;
-        byte _bitPositionInCurrentByte;
-        long _currentBytePosition;
         byte _lastByteTruncatedBits;//TODO: throw exception if i readed too much bits.
         public BitReader( byte[] data )
         {
             _data = data;
-            _bitPositionInCurrentByte = 0;
             _lastByteTruncatedBits = 0;
-            _currentBytePosition = 0;
         }
-        byte CurrentByte => _data[_currentBytePosition];
         public bool this[long i] => ((
             _data[i / 8]//We select the correct byte
-            >> (byte)(7-(i % 8)))//we shift to left to get the correct bit.
+            >> (byte)(7 - (i % 8)))//we shift to left to get the correct bit.
             & 1) == 1;//select the byte at the left and convert it to a bool
 
 
@@ -45,11 +40,38 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="positionInBit"></param>
         /// <returns> <see langword="true"/> if the position is out of range. </returns>
-        bool IsPositionOutOfRange( long positionInBit )
+        bool IsPositionOutOfRange( long positionInBit ) =>
+            (int)Math.Ceiling( (double)positionInBit / 8 ) == _data.Length //Is in the last byte
+            && (positionInBit % 8) + 1 > (8 - _lastByteTruncatedBits); //and is in the truncated part
+
+        /// <summary>
+        /// Search in all the sequence, not from the cursor.
+        /// Return the index of the bit at the beginning of the byte
+        /// </summary>
+        /// <param name="reverse"></param>
+        /// <returns>The position in bit of the byte, or -1 if not found</returns>
+        public long SearchByte( Predicate<byte> byteMatch, bool reverse = false )
         {
-            bool isLastByte =  (int)Math.Ceiling( (double)positionInBit / 8 ) == _data.Length;
-            bool isBitTruncated = (positionInBit % 8)+1 > (8 - _lastByteTruncatedBits);
-            return isLastByte && isBitTruncated;
+            long start = 0;
+            long end = BitCount - 8;
+            int add = 1;
+            if( reverse )
+            {
+                start = BitCount - 8;
+                end = 0;
+                add = -1;
+            }
+            for( long i = start; i < end && !reverse || i > 0 && reverse; i += add )
+            {
+                if( byteMatch( ReadOneByteAt( i ) ) ) return i;
+            }
+            return -1;
+        }
+
+        public void RemoveTrailingZeros()
+        {
+            long bitFoundIndex = SearchByte( b => (b&1) == 1, true ) + 8;
+            TruncateEnd( BitCount - bitFoundIndex );
         }
 
         /// <summary>
@@ -58,24 +80,31 @@ namespace Common.StreamHelpers
         /// <returns>The next 8 bits representated in a byte.</returns>
         public byte ReadOneByte()
         {
+            byte output = ReadOneByteAt( BitPosition );
+            BitPosition += 8;
+            return output;
+        }
+        public byte ReadOneByteAt( long position )
+        {
             if( IsPositionOutOfRange( BitPosition + 7 ) )
             {
                 throw new IndexOutOfRangeException();
             }
+            if( position < 0 ) throw new ArgumentException();
             unchecked
             {
-                byte currentByteShifted = (byte)(CurrentByte >> _bitPositionInCurrentByte);
-                byte newByteShifted = 0;
-                if( _currentBytePosition < _data.Length - 1 )//We avoid reading outside the array.
+                int bytePosition = (int)(position / 8);
+                byte bitPositionInByte = (byte)(position % 8);
+                if( bitPositionInByte == 0 )
                 {
-                    newByteShifted = (byte)(_data[_currentBytePosition + 1] << (8 - _bitPositionInCurrentByte));
+                    return _data[bytePosition];
                 }
-                byte output = (byte)(currentByteShifted | newByteShifted);
-                _currentBytePosition++;
-                return output;
+                byte firstByteShifted = (byte)(_data[bytePosition] << bitPositionInByte);
+                byte secondByteShifted = (byte)(_data[bytePosition + 1] >> (8 - bitPositionInByte));
+                return (byte)(firstByteShifted | secondByteShifted);
             }
-
         }
+
         /// <summary>
         /// Read multiple bytes and advance the cursor of 8 per bytes read
         /// </summary>
@@ -96,9 +125,9 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <exception cref="IndexOutOfRangeException"> Attempt to access truncated data</exception>
         /// <param name="bitCount"></param>
-        public void TruncateEnd( int bitCount )
+        public void TruncateEnd( long bitCount )
         {
-            int byteCountToRemove = bitCount / 8;
+            long byteCountToRemove = bitCount / 8;
             _lastByteTruncatedBits += (byte)(bitCount % 8);
             if( _lastByteTruncatedBits > 7 )
             {
@@ -113,11 +142,11 @@ namespace Common.StreamHelpers
             }
         }
 
-        public void ShiftLeft (int count )
+        public void ShiftLeft( long count )
         {
-            long byteToShift = count/8;
+            long byteToShift = count / 8;
             byte[] newData = new byte[_data.Length];
-            Array.Copy(_data, byteToShift, newData, 0, _data.Length-byteToShift);
+            Array.Copy( _data, byteToShift, newData, 0, _data.Length - byteToShift );
             _data = newData;
             byte bitToShift = (byte)(count % 8);
             for( int i = 0; i + 1 < _data.Length; i++ )
@@ -128,24 +157,15 @@ namespace Common.StreamHelpers
             _data[^1] <<= bitToShift;
         }
 
-        
-        public void TruncateStart( int amount )
+
+        public void TruncateStart( long amount )
         {
             ShiftLeft( amount );
             TruncateEnd( amount );//We pushed all the bits to truncate at the end, so we have bitToShift bits to truncate at the end.
         }
 
-        public long BitPosition
-        {
-            get => _bitPositionInCurrentByte + _currentBytePosition * 8;
-            set
-            {
-                _bitPositionInCurrentByte = (byte)(value % 8);
-                _currentBytePosition = value / 8;
-            }
-        }
+        public long BitPosition { get; set; }
 
-        public long WholeByteRemaining => _data.Length - _currentBytePosition;
-        public long BitRemaining => 8 - _bitPositionInCurrentByte + WholeByteRemaining * 8 - _lastByteTruncatedBits;
+        public long BitCount => 8 * _data.Length - _lastByteTruncatedBits;
     }
 }

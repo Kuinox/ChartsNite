@@ -70,13 +70,14 @@ namespace UnrealReplayParser
         {
             int chunkSize;
             ChunkType chunkType;
-            await using( SubStream chunkHeader = SubStreamFactory.Create( 8 ) )
+            await using( SubStream chunkHeader = SubStreamFactory.CreateSubstream( 8 ) )
             await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
             {
                 chunkType = (ChunkType)await binaryReader.ReadUInt32Async();
                 if( binaryReader.EndOfStream )
                 {
                     binaryReader.SetErrorReported();
+                    chunkHeader.CancelSelfRepositioning();//TODO: SubStream shouldn't throw when repositioning and out of byte.
                     return new ChunkReader(ChunkType.EndOfStream, replayInfo);
                 }
                 chunkSize = await binaryReader.ReadInt32Async();
@@ -86,7 +87,7 @@ namespace UnrealReplayParser
                     return new ChunkReader( ChunkType.Unknown, replayInfo );
                 }
             }
-            return new ChunkReader(chunkType, SubStreamFactory.Create( chunkSize ), replayInfo );
+            return new ChunkReader(chunkType, SubStreamFactory.CreateSubstream( chunkSize ), replayInfo );
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace UnrealReplayParser
                 ChunkType.Header => throw new InvalidOperationException( "Replay Header was already read." ),
                 ChunkType.Checkpoint => await ParseCheckpointHeader( chunkReader ),
                 ChunkType.Event => await ParseEventHeader( chunkReader ),
-                ChunkType.ReplayData => await ParseReplayDataChunkHeader( chunkReader ),
+                ChunkType.ReplayData =>  await ParseReplayDataChunkHeader( chunkReader ),
                 _ => throw new InvalidOperationException( "Invalid ChunkType" )
             }) ? true : await ErrorOnChunkContentParsingAsync();
         }

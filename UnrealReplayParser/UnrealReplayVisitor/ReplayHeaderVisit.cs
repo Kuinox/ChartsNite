@@ -131,12 +131,12 @@ namespace UnrealReplayParser
                 return null;
             }
             uint networkChecksum = await chunkReader.ReadUInt32Async();
-            uint engineNetworkProtocolVersion = await chunkReader.ReadUInt32Async();
-            uint gameNetworkProtocolVerrsion = await chunkReader.ReadUInt32Async();
+            EngineNetworkVersionHistory engineNetworkProtocolVersion = (EngineNetworkVersionHistory)await chunkReader.ReadUInt32Async();
+            uint gameNetworkProtocolVersion = await chunkReader.ReadUInt32Async();
             byte[] guid = new byte[0];
             if( version >= NetworkVersionHistory.guidDemoHeader )
             {
-                guid = await chunkReader.ReadBytesAsync( 16 );
+                guid = (await chunkReader.ReadBytesAsync( 16 )).ToArray();
             }
             ushort major = await chunkReader.ReadUInt16();
             ushort minor = await chunkReader.ReadUInt16();
@@ -147,7 +147,7 @@ namespace UnrealReplayParser
             //Headerflags
             ReplayHeaderFlags replayHeaderFlags = (ReplayHeaderFlags)await chunkReader.ReadUInt32Async();
             string[] gameSpecificData = await new ArrayParser<string, StringParser>( chunkReader, new StringParser( chunkReader ) ).Parse();
-            return new DemoHeader(version, networkChecksum, engineNetworkProtocolVersion, gameNetworkProtocolVerrsion, guid, major, minor, patch, changeList, branch, levelNamesAndTimes, replayHeaderFlags, gameSpecificData);
+            return new DemoHeader(version, networkChecksum, engineNetworkProtocolVersion, gameNetworkProtocolVersion, guid, major, minor, patch, changeList, branch, levelNamesAndTimes, replayHeaderFlags, gameSpecificData);
         }
     }
 }

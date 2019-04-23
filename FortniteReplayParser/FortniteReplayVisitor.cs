@@ -13,9 +13,7 @@ namespace FortniteReplayParser
     {
         public FortniteReplayVisitor( Stream stream ) : base( stream )
         {
-
         }
-
 
         public override ValueTask<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
         {
@@ -23,11 +21,11 @@ namespace FortniteReplayParser
             "AthenaMatchStats" => VisitAthenaMatchStats( eventInfo ),
             "AthenaMatchTeamStats" => VisitAthenaMatchTeamStats( eventInfo ),
             "AthenaReplayBrowserEvents" => VisitAthenaReplayBrowserEvents( chunkReader, eventInfo ),
-            "checkpoint" => VisitCheckPoint( eventInfo ),
             "PlayerStateEncryptionKey" => VisitPlayerStateEncryptionKey( chunkReader, eventInfo ),
             "fortBenchEvent" => VisitFortBenchEvent( chunkReader, eventInfo ),
             _ => VisitUnknowEventChunkType( chunkReader, eventInfo )
         };
+
         public virtual ValueTask<bool> VisitFortBenchEvent( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>( true );
@@ -42,13 +40,9 @@ namespace FortniteReplayParser
         }
         public virtual ValueTask<bool> VisitUnknowEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            return new ValueTask<bool>( false );
+            throw new InvalidDataException( "I throw exceptions when i see a type of chunks i never saw." );
         }
 
-        public virtual ValueTask<bool> VisitCheckPoint( EventOrCheckpointInfo eventInfo )
-        {
-            return new ValueTask<bool>( true );
-        }
         public virtual ValueTask<bool> VisitAthenaMatchStats( EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>( true );
@@ -72,7 +66,8 @@ namespace FortniteReplayParser
                     amountToSkip = 45;
                     break;
             }
-            byte[] unknownData = await binaryReader.ReadBytesAsync( amountToSkip );
+            byte[] unknownData = (await binaryReader.ReadBytesAsync( amountToSkip )).ToArray();
+            
             string killed = await binaryReader.ReadStringAsync();
             string killer = await binaryReader.ReadStringAsync();
             PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByteAsync();

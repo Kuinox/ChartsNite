@@ -29,7 +29,7 @@ namespace UnrealReplayParser
             {
                 return false;
             }
-            bool success = await ChooseEventChunkType( chunkReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ));
+            bool success = await ChooseEventChunkType( chunkReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ) );
             if(!success || chunkReader.IsError)
             {
                 return await ErrorOnParseEventHeader();

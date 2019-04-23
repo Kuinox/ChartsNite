@@ -6,7 +6,7 @@ namespace UnrealReplayParser
 {
     public class DemoHeader
     {
-        public DemoHeader( NetworkVersionHistory version, uint networkChecksum, uint engineNetworkProtocolVersion, uint gameNetworkProtocolVerrsion, byte[] guid, ushort major, ushort minor, ushort patch, uint changeList, string branch, (string, uint)[] levelNamesAndTimes, ReplayHeaderFlags headerFlags, string[] gameSpecificData )
+        public DemoHeader( NetworkVersionHistory version, uint networkChecksum, EngineNetworkVersionHistory engineNetworkProtocolVersion, uint gameNetworkProtocolVerrsion, byte[] guid, ushort major, ushort minor, ushort patch, uint changeList, string branch, (string, uint)[] levelNamesAndTimes, ReplayHeaderFlags headerFlags, string[] gameSpecificData )
         {
             Version = version;
             NetworkChecksum = networkChecksum;
@@ -25,7 +25,7 @@ namespace UnrealReplayParser
 
         public NetworkVersionHistory Version { get; }
         public uint NetworkChecksum { get; }
-        public uint EngineNetworkProtocolVersion { get; }
+        public EngineNetworkVersionHistory EngineNetworkProtocolVersion { get; }
         public uint GameNetworkProtocolVerrsion { get; }
         public byte[] Guid { get; }
         public ushort Major { get; }
@@ -54,6 +54,20 @@ namespace UnrealReplayParser
             historyCharacterMovement = 13,  // Change to using replicated movement and not interpolation
             newVersion,
             latest = newVersion - 1
+        };
+
+        public enum EngineNetworkVersionHistory
+        {
+            HISTORY_INITIAL = 1,
+            HISTORY_REPLAY_BACKWARDS_COMPAT = 2,            // Bump version to get rid of older replays before backwards compat was turned on officially
+            HISTORY_MAX_ACTOR_CHANNELS_CUSTOMIZATION = 3,   // Bump version because serialization of the actor channels changed
+            HISTORY_REPCMD_CHECKSUM_REMOVE_PRINTF = 4,      // Bump version since the way FRepLayoutCmd::CompatibleChecksum was calculated changed due to an optimization
+            HISTORY_NEW_ACTOR_OVERRIDE_LEVEL = 5,           // Bump version since a level reference was added to the new actor information
+            HISTORY_CHANNEL_NAMES = 6,                      // Bump version since channel type is now an fname
+            HISTORY_CHANNEL_CLOSE_REASON = 7,               // Bump version to serialize a channel close reason in bunches instead of bDormant
+            HISTORY_ACKS_INCLUDED_IN_HEADER = 8,            // Bump version since acks are now sent as part of the header
+            HISTORY_NETEXPORT_SERIALIZATION = 9,            // Bump version due to serialization change to FNetFieldExport
+            HISTORY_NETEXPORT_SERIALIZE_FIX = 10,           // Bump version to fix net field export name serialization 
         };
         public enum ReplayHeaderFlags
         {

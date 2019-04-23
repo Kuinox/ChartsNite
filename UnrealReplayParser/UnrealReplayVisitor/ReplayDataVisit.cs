@@ -59,53 +59,7 @@ namespace UnrealReplayParser
             return true;
         }
 
-        /// <summary>
-        /// Was writed to support how Fortnite store replays.
-        /// This may need to be upgrade to support other games, or some future version of Fortnite.
-        /// </summary>
-        /// <param name="binaryReader"></param>
-        /// <param name="replayDataInfo"></param>
-        /// <returns></returns>
-        public virtual bool ParsePlaybackPacket( ChunkReader chunkReader )
-        {
-            bool appendPacket = true;
-            bool hasLevelStreamingFixes = true;//TODO: this method
-            int currentLevelIndex = chunkReader.ReadInt32();//TODO: use replayVersion. HasLevelStreamingFixes
-            float timeSeconds = chunkReader.ReadSingle();
-            ParseExportData( chunkReader );//TODO: use replayVersion. HasLevelStreamingFixes
-            if( (chunkReader.ReplayInfo.DemoHeader.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) > 0 )
-            {
-                uint levelAddedThisFrameCount = chunkReader.ReadIntPacked();
-                for( int i = 0; i < levelAddedThisFrameCount; i++ )
-                {
-                    string levelName = chunkReader.ReadString();
-                }
-            }
-            else
-            {
-                throw new NotSupportedException( "TODO" );
-            }
-            long skipExternalOffset = 0;
-            if( hasLevelStreamingFixes ) //TODO HasLevelStreamingFixes
-            {
-                skipExternalOffset = chunkReader.ReadInt64();
-            }
-
-            ParseExternalData( chunkReader );//there is a branch on fastForward
-            uint seenLevelIndex = 0;
-
-            while( true )
-            {
-                if( hasLevelStreamingFixes )
-                {
-                    seenLevelIndex = chunkReader.ReadIntPacked();
-                }
-                (bool success, int amount) = ParsePacket( chunkReader );
-                if( amount == 0 ) break;
-                if( appendPacket ) continue;
-            }//There is more data ?
-            return true;
-        }
+        
 
         public virtual (bool success, int amount) ParsePacket( ChunkReader chunkReader )
         {
@@ -120,23 +74,35 @@ namespace UnrealReplayParser
             return (true, outBufferSize);
         }
 
-        public virtual bool ProcessIncomingPacket( BitReader bitReader )
+        public virtual bool ProcessRawPacket(BitReader bitReader)
         {
             bool handshakePacket = bitReader.ReadBit();
             if( handshakePacket )
             {
                 return true;//Never had a handshake packet.
             }
-            if( bitReader.BitRemaining > 0 )
-            {
+            //if( bitReader.BitRemaining > 0 )
+            //{
 
-            }
+            //}
             else
             {
                 return true;//packet has been consumed
             }
             return true;
         }
+
+        public virtual bool IncomingInternal( BitReader bitReader )
+        {
+            bitReader.RemoveTrailingZeros();
+            byte[] dump = bitReader.ReadBytes( (int)((bitReader.BitCount - bitReader.BitPosition) / 8) );
+            Console.WriteLine( BitConverter.ToString( dump ) );
+            return true;
+        }
+        //public virtual bool ProcessIncomingPacket( BitReader bitReader )
+        //{
+            
+        //}
 
         public virtual bool ParseExternalData( ChunkReader chunkReader )
         {
@@ -153,16 +119,16 @@ namespace UnrealReplayParser
             }
         }
 
-        public virtual bool ParseExportData( CustomBinaryReaderAsync binaryReader )
+        public virtual bool ParseExportData( ChunkReader binaryReader )
         {
             return ParseNetFieldExports( binaryReader )
                 && ParseNetExportGUIDs( binaryReader );
         }
 
-        public virtual bool ParseNetFieldExports( CustomBinaryReaderAsync binaryReader )
+        public virtual bool ParseNetFieldExports( ChunkReader binaryReader )//To network
         {
-            uint exportCout = binaryReader.ReadIntPacked();
-            for( int i = 0; i < exportCout; i++ )
+            uint exportCount = binaryReader.ReadIntPacked();
+            for( int i = 0; i < exportCount; i++ )
             {
                 uint pathNameIndex = binaryReader.ReadIntPacked();
                 uint wasExported = binaryReader.ReadIntPacked();

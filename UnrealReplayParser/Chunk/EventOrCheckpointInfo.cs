@@ -10,8 +10,6 @@ namespace UnrealReplayParser
         public readonly string Metadata;
         public readonly uint Time1;
         public readonly uint Time2;
-        public readonly bool IsCheckpoint;
-
         public EventOrCheckpointInfo(string id, string group, string metadata, uint time1, uint time2)
         {
             Id = id;

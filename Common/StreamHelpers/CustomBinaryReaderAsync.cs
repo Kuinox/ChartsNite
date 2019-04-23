@@ -53,31 +53,28 @@ namespace Common.StreamHelpers
         /// <returns>Always false to use it as the return statement in a match method.</returns>
         public bool AddError( object? errorMessage = null, bool beforeExisting = false, bool fatal = false, [CallerMemberName]string? callerName = null )
         {
-            if( !EndOfStream )
-            {
-
-            }
-            _errorReported = false;
-            if( fatal )
-            {
-                SetFatal();
-            }
-            if( _errorDescription != null )
-            {
-                if( beforeExisting )
-                {
-                    _errorDescription = FormatMessage( errorMessage, callerName ) + Environment.NewLine + "<-- " + _errorDescription;
-                }
-                else
-                {
-                    _errorDescription = _errorDescription + Environment.NewLine + "<-- " + FormatMessage( errorMessage, callerName );
-                }
-            }
-            else
-            {
-                _errorDescription = FormatMessage( errorMessage, callerName );
-            }
-            return false;
+            throw new InvalidOperationException();
+            //_errorReported = false;
+            //if( fatal )
+            //{
+            //    SetFatal();
+            //}
+            //if( _errorDescription != null )
+            //{
+            //    if( beforeExisting )
+            //    {
+            //        _errorDescription = FormatMessage( errorMessage, callerName ) + Environment.NewLine + "<-- " + _errorDescription;
+            //    }
+            //    else
+            //    {
+            //        _errorDescription = _errorDescription + Environment.NewLine + "<-- " + FormatMessage( errorMessage, callerName );
+            //    }
+            //}
+            //else
+            //{
+            //    _errorDescription = FormatMessage( errorMessage, callerName );
+            //}
+            //return false;
         }
         static string? FormatMessage( object? expectedMessage, string? callerName )
         {
@@ -94,17 +91,17 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="count"></param>
         /// <returns>Asked bytes, then zeros if there was no enough, in this case, the <see cref="BinaryReader"/></returns>
-        public async ValueTask<byte[]> ReadBytesAsync( int count )
+        public async ValueTask<Memory<byte>> ReadBytesAsync( int count )
         {
             if(count<0)
             {
                 throw new ArgumentException("Cannot read a negative amount.");
             }
-            byte[] buffer = new byte[count];
+            var buffer = new Memory<byte>(new byte[count]);
             int toRead = count;
             while( toRead > 0 )
             {
-                int read = await BaseStream.ReadAsync( buffer, count - toRead, count );
+                int read = await BaseStream.ReadAsync( buffer[Range.StartAt( count - toRead )]);
                 if( read == 0 )
                 {
                     if( EndOfStream )
@@ -135,7 +132,7 @@ namespace Common.StreamHelpers
             int toRead = count;
             while( toRead > 0 )
             {
-                int read = BaseStream.Read( buffer, count - toRead, count );
+                int read = BaseStream.Read( buffer, count - toRead, toRead );
                 if( read == 0 )
                 {
                     if( EndOfStream )
@@ -151,23 +148,28 @@ namespace Common.StreamHelpers
             return buffer;
         }
 
-        public ValueTask<byte[]> DumpRemainingBytes()
+        public async ValueTask<byte[]> DumpRemainingBytesAsync()
         {
-            return ReadBytesAsync( (int)(BaseStream.Length - BaseStream.Position));
+            return (await ReadBytesAsync( (int)(BaseStream.Length - BaseStream.Position))).ToArray();
+        }
+
+        public byte[] DumpRemainingBytes()
+        {
+            return ReadBytes( (int)(BaseStream.Length - BaseStream.Position));
         }
         #region ReadNumbers
-        public async ValueTask<uint> ReadUInt32Async() => BitConverter.ToUInt32( await ReadBytesAsync( 4 ), 0 );
+        public async ValueTask<uint> ReadUInt32Async() => BitConverter.ToUInt32( (await ReadBytesAsync( 4 )).Span );
         public uint ReadUInt32() => BitConverter.ToUInt32( ReadBytes( 4 ), 0 );
-        public async ValueTask<int> ReadInt32Async() => BitConverter.ToInt32( await ReadBytesAsync( 4 ), 0 );
+        public async ValueTask<int> ReadInt32Async() => BitConverter.ToInt32( (await ReadBytesAsync( 4 )).Span );
         public int ReadInt32() => BitConverter.ToInt32( ReadBytes( 4 ), 0 );
-        public async ValueTask<byte> ReadOneByteAsync() => (await ReadBytesAsync( 1 ))[0];
+        public async ValueTask<byte> ReadOneByteAsync() => (await ReadBytesAsync( 1 )).Span[0];
         public byte ReadOneByte() => ReadBytes( 1 )[0];
-        public async ValueTask<float> ReadSingleAsync() => BitConverter.ToSingle( await ReadBytesAsync( 4 ), 0 );
+        public async ValueTask<float> ReadSingleAsync() => BitConverter.ToSingle( (await ReadBytesAsync( 4 )).Span );
         public float ReadSingle() => BitConverter.ToSingle( ReadBytes( 4 ), 0 );
 
-        public async ValueTask<short> ReadInt16() => BitConverter.ToInt16( await ReadBytesAsync( 2 ), 0 );
-        public async ValueTask<ushort> ReadUInt16() => BitConverter.ToUInt16( await ReadBytesAsync( 2 ), 0 );
-        public async ValueTask<long> ReadInt64Async() => BitConverter.ToInt64( await ReadBytesAsync( 8 ), 0 );
+        public async ValueTask<short> ReadInt16() => BitConverter.ToInt16( (await ReadBytesAsync( 2 )).Span );
+        public async ValueTask<ushort> ReadUInt16() => BitConverter.ToUInt16( (await ReadBytesAsync( 2 )).Span );
+        public async ValueTask<long> ReadInt64Async() => BitConverter.ToInt64( (await ReadBytesAsync( 8 )).Span );
         public long ReadInt64() => BitConverter.ToInt64( ReadBytes( 8 ), 0 );
 
 
@@ -177,14 +179,9 @@ namespace Common.StreamHelpers
         public async ValueTask<string> ReadStringAsync()
         {
             int length = await ReadInt32Async();
-            if( length == -2147483648 )//if we reverse this, it has an
+            if( length == -2147483648 )//if we reverse this, it overflow
             {
                 AddError( "The size of the string has an invalid value" );
-                return "";
-            }
-            if( length > BaseStream.Length + BaseStream.Position || length < 0 && -length > BaseStream.Length + BaseStream.Position )
-            {
-                AddError( "The size of the string was bigger than the stream. Probably not a string." );
                 return "";
             }
             if( length == 0 )
@@ -193,18 +190,15 @@ namespace Common.StreamHelpers
             }
 
             bool isUnicode = length < 0;
-            byte[] data;
             string value;
             if( isUnicode )
             {
                 length = -length;
-                data = await ReadBytesAsync( length * 2 );
-                value = Encoding.Unicode.GetString( data );
+                value = Encoding.Unicode.GetString( (await ReadBytesAsync( length * 2 )).Span );
             }
             else
             {
-                data = await ReadBytesAsync( length );
-                value = Encoding.Default.GetString( data );
+                value = Encoding.Default.GetString( (await ReadBytesAsync( length )).Span );
             }
             return value.Trim( ' ', '\0' );
         }
@@ -303,19 +297,7 @@ namespace Common.StreamHelpers
             return value;
         }
 
-        public NetFieldExport ReadNetFieldExport()
-        {
-            bool exported = 1 == ReadOneByte();
-            if( !exported )
-            {
-                return NetFieldExport.InitializeNotExported();
-            }
-            uint handle = ReadIntPacked();
-            uint compatibleChecksum = ReadUInt32();
-            string name = ReadString();
-            string type = ReadString();
-            return NetFieldExport.InitializeExported( handle, compatibleChecksum, name, type );
-        }
+        
 
         public async ValueTask DisposeAsync()
         {

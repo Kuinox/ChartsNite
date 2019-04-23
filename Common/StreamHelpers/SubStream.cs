@@ -8,18 +8,9 @@ namespace Common.StreamHelpers
 {
     public class SubStream : Stream
     {
-        public enum ForceState
-        {
-            Nothing,
-            ForceAsync,
-            ForceSync
-        }
-
         readonly Stream _stream;
         readonly bool _leaveOpen;
-        readonly ForceState _forceState;
         readonly long _startPosition;
-        readonly long _maxPosition;
         readonly bool _isPositionAvailable;
         bool _dontFlush;
         long _relativePosition;
@@ -33,49 +24,26 @@ namespace Common.StreamHelpers
         /// <param name="stream">Base <see cref="Stream"/></param>
         /// <param name="length">Length of this SubStream</param>
         /// <param name="leaveOpen">if i should leave open the Base <see cref="Stream"/></param>
-        internal SubStream( Stream stream, long length, bool leaveOpen = false, ForceState forceState = ForceState.Nothing )
+        internal SubStream( Stream stream, long length, bool canReadLength, bool canReadPosition, bool leaveOpen = false )
         {
-            if(!Enum.IsDefined(typeof(ForceState), forceState))
-            {
-                throw new ArgumentException( "Invalid Enum as argument." );
-            }
-            ///Even if some stream have the property CanSeek set to false, they may have their Length or Position available.
-            ///In this case, i will use these properties to increase the safety.
-            try //We test if the length is available. I have no other way to know if i can read the Length.
-            {
-                if( length > stream.Length )
-                {
-                    throw new InvalidOperationException( "Available length is smaller than asked length." );
-                }
-            }
-            catch( NotSupportedException )
-            {
-                //We add extra safety if we can read stream.Length. If we can't, not a big deal and we can ignore safely.
-            }
-
-            try //We test if the Position is available. I have no other way to know if i can read the Position.
-            {
-                long temp = stream.Position;
-                _isPositionAvailable = true;
-            }
-            catch( NotSupportedException )
-            {
-                _isPositionAvailable = false;
-            }
+            Length = length;
             _stream = stream;
             _leaveOpen = leaveOpen;
-            _forceState = forceState;
-            Length = length;
-            if( !_isPositionAvailable )//TODO: When the Position is not available, this may fail
+            _isPositionAvailable = canReadPosition;
+            if(_isPositionAvailable)
             {
-                return;
+                if( canReadLength && stream.Position + length > stream.Length)
+                {
+                    throw new InvalidOperationException( "The substream length is bigger than the base stream" );
+                }
+                _startPosition = stream.Position;
+
             }
-            _startPosition = stream.Position;
-            _maxPosition = _startPosition + length;
             Checks();
         }
         /// <summary>
-        /// Make the Dispose not move the BaseStream Position
+        /// The Dispose does nothing after this.
+        /// It's usefull when you 
         /// </summary>
         public void CancelSelfRepositioning() => _dontFlush = true;
 
@@ -85,25 +53,46 @@ namespace Common.StreamHelpers
             _stream.Flush();
         }
 
-        #region Reads    
+        #region Reads
+
+        int ComputeAmountToRead( int count )
+        {
+            return count + Position <= Length ? count : (int)(Length - Position);
+        }
         public override int Read( byte[] buffer, int offset, int count )
         {
             Checks();
-            if(_forceState == ForceState.ForceAsync)
-            {
-                throw new InvalidOperationException( "You asked to do Async only." );
-            }
             return ReadWithoutChecks( buffer, offset, count );
         }
 
         int ReadWithoutChecks( byte[] buffer, int offset, int count )
         {
-            int toRead = count;
-            if( count + Position > Length )
-            {
-                toRead = (int)(Length - Position);
-            }
+            int toRead = ComputeAmountToRead( count );
             int read = _stream.Read( buffer, offset, toRead );
+            _relativePosition += read;
+            return read;
+        }
+
+
+        int ReadWithoutChecks( Span<byte> buffer )
+        {
+            int toRead = ComputeAmountToRead( buffer.Length );
+            int read = _stream.Read( buffer[Range.EndAt( toRead )] );
+            _relativePosition += read;
+            return read;
+        }
+
+        public override int Read( Span<byte> buffer )
+        {
+            Checks();
+            return ReadWithoutChecks( buffer );
+        }
+
+        public override int ReadByte()
+        {
+            Checks();
+            if( ComputeAmountToRead( 1 ) == 0 ) return 0;
+            int read = _stream.ReadByte();
             _relativePosition += read;
             return read;
         }
@@ -111,24 +100,32 @@ namespace Common.StreamHelpers
         public override Task<int> ReadAsync( byte[] buffer, int offset, int count, CancellationToken cancellationToken )
         {
             Checks();
-            if( _forceState == ForceState.ForceSync )
-            {
-                throw new InvalidOperationException( "You asked to do Sync only." );
-            }
             return ReadWithoutChecksAsync( buffer, offset, count, cancellationToken );
+        }
+
+        public override ValueTask<int> ReadAsync( Memory<byte> buffer, CancellationToken cancellationToken = default )
+        {
+            Checks();
+            return ReadWithoutChecksAsync( buffer, cancellationToken );
         }
 
         async Task<int> ReadWithoutChecksAsync( byte[] buffer, int offset, int count, CancellationToken cancellationToken )
         {
-            int toRead = count;
-            if( count + Position > Length )
-            {
-                toRead = (int)(Length - Position);
-            }
+            int toRead = count + Position <= Length ? count : (int)(Length - Position);//if he ask to read too much bytes, we set toRead to the number of remaining bytes.
             int read = await _stream.ReadAsync( buffer, offset, toRead, cancellationToken );
             _relativePosition += read;
             return read;
         }
+
+        async ValueTask<int> ReadWithoutChecksAsync( Memory<byte> memory, CancellationToken cancellationToken )
+        {
+            int toRead = memory.Length + Position <= Length ? memory.Length : (int)(Length - Position);
+            int read = await _stream.ReadAsync( memory[Range.EndAt( toRead )], cancellationToken );
+            _relativePosition += read;
+            return read;
+        }
+
+
         #endregion Reads
 
         public override long Seek( long offset, SeekOrigin origin )
@@ -163,7 +160,7 @@ namespace Common.StreamHelpers
                     {
                         throw new InvalidOperationException();
                     }
-                    pos = _stream.Seek( _maxPosition + offset, SeekOrigin.Begin );
+                    pos = _stream.Seek( _startPosition + Length + offset, SeekOrigin.Begin );
                     _relativePosition = pos - _startPosition;
                     return _relativePosition;
                 default:
@@ -224,10 +221,6 @@ namespace Common.StreamHelpers
         }
         public override async ValueTask DisposeAsync()
         {
-            if( _forceState == ForceState.ForceSync )
-            {
-                throw new InvalidOperationException( "You asked to do Sync only." );
-            }
             if( Disposed )
             {
                 return;
@@ -239,12 +232,10 @@ namespace Common.StreamHelpers
                 return;
             }
 
-            //https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.read
             int toSkip = TrySyncDispose();
-
-            while( toSkip != 0 )
+            while( toSkip != 0 )//We can't seek, so we 'burn' all the bytes to move the cursor to the position
             {
-                int read = await ReadWithoutChecksAsync( new byte[toSkip], 0, toSkip, default );
+                int read = await ReadWithoutChecksAsync( new byte[toSkip], default );
                 toSkip -= read;
                 if( read == 0 )
                 {
@@ -280,10 +271,6 @@ namespace Common.StreamHelpers
 
         protected override void Dispose( bool disposing )
         {
-            if( _forceState == ForceState.ForceAsync )
-            {
-                throw new InvalidOperationException( "You asked to do Async only." );
-            }
             int toSkip = TrySyncDispose();
             while( toSkip != 0 )
             {

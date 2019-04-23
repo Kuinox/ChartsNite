@@ -26,10 +26,10 @@ namespace ChartsNite.ReplayOrganizer
                 int i = 0;
                 foreach( var path in new ReplayFetcher().GetAllReplaysPath() )
                 {
-                    i++;
-                    if(i==250)
+
+                    if(!path.Contains("Unsaved") || !path.Contains( "03.28" ) )
                     {
-                        break;
+                        continue;
                     }
                     replayHeaderDumper.DumpValue( Path.GetFileNameWithoutExtension( path ) );
                     using( var replayStream = File.OpenRead( path ) )

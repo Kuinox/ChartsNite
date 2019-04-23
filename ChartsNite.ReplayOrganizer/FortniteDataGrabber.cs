@@ -28,7 +28,7 @@ namespace ChartsNite.ReplayOrganizer
         public override async ValueTask<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
         {
             bool result = await base.ParseCheckpointContent( chunkReader, id, group, metadata, time1, time2 );
-            CheckpointsDumps.Add( await chunkReader.ReadBytesAsync( (int)(chunkReader.BaseStream.Length - chunkReader.BaseStream.Position) ) );
+            //CheckpointsDumps.Add( await chunkReader.ReadBytesAsync( (int)(chunkReader.BaseStream.Length - chunkReader.BaseStream.Position) ) );
             return result;
         }
 

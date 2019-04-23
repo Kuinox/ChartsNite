@@ -1,10 +1,13 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
+using UnrealReplayParser.UnrealObject;
+
 namespace UnrealReplayParser
 {
     /// <summary>
@@ -31,9 +34,32 @@ namespace UnrealReplayParser
             return await ParseCheckpointContent( await chunkReader.UncompressDataIfNeeded(), id, group, metadata, time1, time2 );
         }
 
-        public virtual ValueTask<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
+        public virtual async ValueTask<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
         {
-            return new ValueTask<bool>(true);
+            long packetOffset = chunkReader.ReadInt64();
+            int levelForCheckpoint = chunkReader.ReadInt32();
+
+            string[] deletedNetStartupActors = await new SparseArrayParser<string, StringParser>( chunkReader, new StringParser( chunkReader ) ).Parse();
+
+
+            
+
+            int valuesCount = await chunkReader.ReadInt32Async();
+            for( int i = 0; i < valuesCount; i++ )
+            {
+                uint guid = await chunkReader.ReadIntPackedAsync();
+                uint outerGuid = await chunkReader.ReadIntPackedAsync();
+                string path = await chunkReader.ReadStringAsync();
+                uint checksum = await chunkReader.ReadUInt32Async();
+                byte flags = await chunkReader.ReadOneByteAsync();
+            }
+            //ParsePlaybackPacket( chunkReader );
+            File.WriteAllBytes( "dump.dump", await chunkReader.DumpRemainingBytesAsync() );
+            if(chunkReader.IsError)
+            {
+
+            }
+            return true;
         }
 
         public virtual ValueTask<bool> ErrorOnParseEventOrCheckpointHeader()
