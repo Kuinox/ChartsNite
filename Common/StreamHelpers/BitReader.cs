@@ -40,9 +40,15 @@ namespace Common.StreamHelpers
         /// </summary>
         /// <param name="positionInBit"></param>
         /// <returns> <see langword="true"/> if the position is out of range. </returns>
-        bool IsPositionOutOfRange( long positionInBit ) =>
-            (int)Math.Ceiling( (double)positionInBit / 8 ) == _data.Length //Is in the last byte
-            && (positionInBit % 8) + 1 > (8 - _lastByteTruncatedBits); //and is in the truncated part
+        bool IsPositionOutOfRange( long positionInBit )
+        {
+#if DEBUG
+            return 
+                    positionInBit >> 3 >= _data.Length
+                    || positionInBit >> 3 == _data.Length - 1//Is in the last byte
+                    && (positionInBit % 8) + 1 > (8 - _lastByteTruncatedBits); //and is in the truncated part
+#endif
+        }
 
         /// <summary>
         /// Search in all the sequence, not from the cursor.
@@ -70,7 +76,7 @@ namespace Common.StreamHelpers
 
         public void RemoveTrailingZeros()
         {
-            long bitFoundIndex = SearchByte( b => (b&1) == 1, true ) + 8;
+            long bitFoundIndex = SearchByte( b => (b & 1) == 1, true ) + 8;
             TruncateEnd( BitCount - bitFoundIndex );
         }
 

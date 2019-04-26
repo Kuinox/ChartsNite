@@ -23,7 +23,6 @@ namespace ChartsNite.ReplayOrganizer
                 DataDumper replayHeaderDumper = new DataDumper( replayWorksheet );
                 DataDumper replayDataDumper = new DataDumper( replayData );
                 DataDumper checkpointDumper = new DataDumper( checkpoint );
-                int i = 0;
                 foreach( var path in new ReplayFetcher().GetAllReplaysPath() )
                 {
 

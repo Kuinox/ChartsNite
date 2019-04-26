@@ -59,7 +59,7 @@ namespace UnrealReplayParser
             return true;
         }
 
-        
+
 
         public virtual (bool success, int amount) ParsePacket( ChunkReader chunkReader )
         {
@@ -71,37 +71,40 @@ namespace UnrealReplayParser
             }
             if( outBufferSize == 0 ) return (true, outBufferSize);
             byte[] outBuffer = chunkReader.ReadBytes( outBufferSize );
+            ProcessRawPacket( new BitReader( outBuffer ) );
             return (true, outBufferSize);
         }
 
-        public virtual bool ProcessRawPacket(BitReader bitReader)
+        public virtual bool ProcessRawPacket( BitReader bitReader )
         {
-            bool handshakePacket = bitReader.ReadBit();
-            if( handshakePacket )
-            {
-                return true;//Never had a handshake packet.
-            }
-            //if( bitReader.BitRemaining > 0 )
+            Incoming( bitReader );
+            //bool handshakePacket = bitReader.ReadBit();
+            //if( handshakePacket )
             //{
-
+            //    return true;//Never had a handshake packet.
             //}
-            else
-            {
-                return true;//packet has been consumed
-            }
+            ////if( bitReader.BitRemaining > 0 )
+            ////{
+
+            ////}
+            //else
+            //{
+            //    return true;//packet has been consumed
+            //}
             return true;
         }
 
-        public virtual bool IncomingInternal( BitReader bitReader )
+        public virtual bool Incoming( BitReader bitReader )
         {
             bitReader.RemoveTrailingZeros();
+            //We need to know the handlers components used in the 
             byte[] dump = bitReader.ReadBytes( (int)((bitReader.BitCount - bitReader.BitPosition) / 8) );
-            Console.WriteLine( BitConverter.ToString( dump ) );
+            //Console.WriteLine( BitConverter.ToString( dump ) );
             return true;
         }
         //public virtual bool ProcessIncomingPacket( BitReader bitReader )
         //{
-            
+
         //}
 
         public virtual bool ParseExternalData( ChunkReader chunkReader )
