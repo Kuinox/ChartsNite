@@ -15,7 +15,7 @@ namespace FortniteReplayParser
         {
         }
 
-        public override ValueTask<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
+        public override ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
         {
             "playerElim" => VisitPlayerElimChunk( chunkReader, eventInfo ),
             "AthenaMatchStats" => VisitAthenaMatchStats( eventInfo ),
@@ -26,19 +26,19 @@ namespace FortniteReplayParser
             _ => VisitUnknowEventChunkType( chunkReader, eventInfo )
         };
 
-        public virtual ValueTask<bool> VisitFortBenchEvent( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitFortBenchEvent( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>( true );
         }
-        public virtual ValueTask<bool> VisitPlayerStateEncryptionKey( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitPlayerStateEncryptionKey( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>( true );
         }
-        public virtual ValueTask<bool> VisitAthenaReplayBrowserEvents( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitAthenaReplayBrowserEvents( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>( true );
         }
-        public virtual ValueTask<bool> VisitUnknowEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> VisitUnknowEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
         {
             throw new InvalidDataException( "I throw exceptions when i see a type of chunks i never saw." );
         }
@@ -51,10 +51,10 @@ namespace FortniteReplayParser
         {
             return new ValueTask<bool>( true );
         }
-        public virtual async ValueTask<bool> VisitPlayerElimChunk( ChunkReader binaryReader, EventOrCheckpointInfo eventInfo )
+        public virtual async ValueTask<bool> VisitPlayerElimChunk( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             int amountToSkip;
-            switch( binaryReader.ReplayInfo.DemoHeader.Branch )
+            switch( DemoHeader!.Branch )
             {
                 case "++Fortnite+Release-4.0":
                     amountToSkip = 12;
@@ -66,11 +66,11 @@ namespace FortniteReplayParser
                     amountToSkip = 45;
                     break;
             }
-            byte[] unknownData = (await binaryReader.ReadBytesAsync( amountToSkip )).ToArray();
+            Memory<byte> unknownData = await binaryReader.ReadBytesAsync( amountToSkip );
             
             string killed = await binaryReader.ReadStringAsync();
             string killer = await binaryReader.ReadStringAsync();
-            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadOneByteAsync();
+            PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadByteAsync();
             PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32Async();
             return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
         }

@@ -13,6 +13,8 @@ namespace Common.StreamHelpers
         /// WARNING. If you change the position while a SubStream is instancied and not Disposed, everything will burn, and your computer will try to kill you.
         /// </summary>
         public Stream BaseStream => _baseStream;
+        public bool CanReadLength => _canReadLength;
+        public bool CanReadPosition => _canReadPosition;
         bool _canReadLength;
         bool _canReadPosition;
         void StreamCapabilitiesTest( Stream stream )

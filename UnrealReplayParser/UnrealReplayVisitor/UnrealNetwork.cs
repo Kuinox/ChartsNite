@@ -1,5 +1,7 @@
+using Common.StreamHelpers;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnrealReplayParser.Chunk;
 
@@ -15,7 +17,7 @@ namespace UnrealReplayParser
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns></returns>
-        public virtual bool ParsePlaybackPacket( ChunkReader chunkReader )
+        public virtual bool ParsePlaybackPacket( CustomBinaryReader chunkReader )
         {
             bool appendPacket = true;
             bool hasLevelStreamingFixes = true;//TODO: this method
@@ -23,10 +25,10 @@ namespace UnrealReplayParser
             float timeSeconds = chunkReader.ReadSingle();
             if(float.IsNaN(timeSeconds))
             {
-
+                throw new InvalidDataException();
             }
             ParseExportData( chunkReader );//TODO: use replayVersion. HasLevelStreamingFixes
-            if( (chunkReader.ReplayInfo.DemoHeader.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) > 0 )
+            if( (DemoHeader!.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) > 0 )
             {
                 uint levelAddedThisFrameCount = chunkReader.ReadIntPacked();
                 for( int i = 0; i < levelAddedThisFrameCount; i++ )

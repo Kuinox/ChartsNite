@@ -20,51 +20,33 @@ namespace UnrealReplayParser
     {
         protected const uint FileMagic = 0x1CA2E27F;
         protected const uint DemoHeaderMagic = 0x2CF5A13D;
+        protected ReplayHeader? ReplayHeader { get; set; }
+        protected DemoHeader? DemoHeader { get; set; }
         public virtual async ValueTask<bool> Visit()
         {
-            ReplayInfo? replayInfo = await ParseReplayInfo();
-            if( replayInfo == null )
-            {
-                return false;
-            }
-            return await VisitReplayChunks( replayInfo );
+            return await ParseReplayInfo() ? await VisitChunks() : false;
         }
 
-        public virtual async ValueTask<ReplayInfo?> ParseReplayInfo()
+        public virtual async ValueTask<bool> ParseReplayInfo()
         {
-            await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true ) )
+            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true ) )
             {
-                ReplayHeader? replayHeader = await ParseReplayHeader( binaryReader );
-                if( replayHeader == null )
+                if( !await ParseReplayHeader( binaryReader ) ) return false;
+                ChunkHeader chunkHeader = await ParseChunkHeader();
+                if( chunkHeader.ChunkType != ChunkType.Header ) return false;
+                await using( SubStream stream = SubStreamFactory.CreateSubstream( chunkHeader.ChunkSize ) )
+                using( CustomBinaryReaderAsync chunkReader = new CustomBinaryReaderAsync( stream, true ) )
                 {
-                    return null;
-                }
-
-                await using( ChunkReader chunkReader = await ParseChunkHeader( new ReplayInfo( replayHeader, new DemoHeader( NetworkVersionHistory.initial, 0, 0, 0, new byte[0], 0, 0, 0, 0, "", new (string, uint)[0], ReplayHeaderFlags.None, new string[0] ) ) ) )
-                {
-                    if( chunkReader == null )
-                    {
-                        return null;
-                    }
-                    DemoHeader? demoHeader;
-                    await using( chunkReader )
-                    {
-                        demoHeader = await ParseGameSpecificHeaderChunk( chunkReader );
-                    }
-                    if( demoHeader == null )
-                    {
-                        return null;
-                    }
-                    return new ReplayInfo( replayHeader, demoHeader );
+                    return await ParseGameSpecificHeaderChunk( chunkReader );
                 }
             }
         }
 
-        public virtual async ValueTask<ReplayHeader?> ParseReplayHeader( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseReplayHeader( CustomBinaryReaderAsync binaryReader )
         {
             if( !await ParseMagicNumber( binaryReader ) )
             {
-                return null;
+                return false;
             }
             ReplayHeader.ReplayVersionHistory fileVersion = (ReplayHeader.ReplayVersionHistory)await binaryReader.ReadUInt32Async();
             int lengthInMs = await binaryReader.ReadInt32Async();
@@ -82,8 +64,9 @@ namespace UnrealReplayParser
             {
                 compressed = await binaryReader.ReadUInt32Async() != 0;
             }
-            return new ReplayHeader( lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
+            ReplayHeader = new ReplayHeader( lengthInMs, networkVersion, changelist, friendlyName, timestamp, 0,
             isLive, compressed, fileVersion );
+            return true;
         }
         /// <summary>
         /// Error occured while parsing the header.
@@ -112,42 +95,37 @@ namespace UnrealReplayParser
             return new ValueTask<bool>( magicNumber == FileMagic );
         }
 
-        
+
 
         /// <summary>
         /// Simply return true and does nothing else. It depends on the implementation of the game.
         /// </summary>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async ValueTask<DemoHeader?> ParseGameSpecificHeaderChunk( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseGameSpecificHeaderChunk( CustomBinaryReaderAsync binaryReader )
         {
-            if( await chunkReader.ReadUInt32Async() != DemoHeaderMagic )
-            {
-                return null;
-            }
-            NetworkVersionHistory version = (NetworkVersionHistory)await chunkReader.ReadUInt32Async();
-            if( version < NetworkVersionHistory.saveFullEngineVersion )
-            {
-                return null;
-            }
-            uint networkChecksum = await chunkReader.ReadUInt32Async();
-            EngineNetworkVersionHistory engineNetworkProtocolVersion = (EngineNetworkVersionHistory)await chunkReader.ReadUInt32Async();
-            uint gameNetworkProtocolVersion = await chunkReader.ReadUInt32Async();
+            if( await binaryReader.ReadUInt32Async() != DemoHeaderMagic ) return false;
+            NetworkVersionHistory version = (NetworkVersionHistory)await binaryReader.ReadUInt32Async();
+            if( version < NetworkVersionHistory.saveFullEngineVersion ) return false;
+            uint networkChecksum = await binaryReader.ReadUInt32Async();
+            EngineNetworkVersionHistory engineNetworkProtocolVersion = (EngineNetworkVersionHistory)await binaryReader.ReadUInt32Async();
+            uint gameNetworkProtocolVersion = await binaryReader.ReadUInt32Async();
             byte[] guid = new byte[0];
             if( version >= NetworkVersionHistory.guidDemoHeader )
             {
-                guid = (await chunkReader.ReadBytesAsync( 16 )).ToArray();
+                guid = (await binaryReader.ReadBytesAsync( 16 )).ToArray();
             }
-            ushort major = await chunkReader.ReadUInt16();
-            ushort minor = await chunkReader.ReadUInt16();
-            ushort patch = await chunkReader.ReadUInt16();
-            uint changeList = await chunkReader.ReadUInt32Async();
-            string branch = await chunkReader.ReadStringAsync();
-            (string, uint)[] levelNamesAndTimes = await new ArrayParser<(string, uint), TupleParser<StringParser, UInt32Parser, string, uint>>( chunkReader, new TupleParser<StringParser, UInt32Parser, string, uint>( new StringParser( chunkReader ), new UInt32Parser( chunkReader ) ) ).Parse();
+            ushort major = await binaryReader.ReadUInt16Async();
+            ushort minor = await binaryReader.ReadUInt16Async();
+            ushort patch = await binaryReader.ReadUInt16Async();
+            uint changeList = await binaryReader.ReadUInt32Async();
+            string branch = await binaryReader.ReadStringAsync();
+            (string, uint)[] levelNamesAndTimes = await binaryReader.ReadArrayAsync( async () => (await binaryReader.ReadStringAsync(), await binaryReader.ReadUInt32Async()) );
             //Headerflags
-            ReplayHeaderFlags replayHeaderFlags = (ReplayHeaderFlags)await chunkReader.ReadUInt32Async();
-            string[] gameSpecificData = await new ArrayParser<string, StringParser>( chunkReader, new StringParser( chunkReader ) ).Parse();
-            return new DemoHeader(version, networkChecksum, engineNetworkProtocolVersion, gameNetworkProtocolVersion, guid, major, minor, patch, changeList, branch, levelNamesAndTimes, replayHeaderFlags, gameSpecificData);
+            ReplayHeaderFlags replayHeaderFlags = (ReplayHeaderFlags)await binaryReader.ReadUInt32Async();
+            string[] gameSpecificData = await binaryReader.ReadArrayAsync( binaryReader.ReadStringAsync );
+            DemoHeader = new DemoHeader( version, networkChecksum, engineNetworkProtocolVersion, gameNetworkProtocolVersion, guid, major, minor, patch, changeList, branch, levelNamesAndTimes, replayHeaderFlags, gameSpecificData );
+            return true;
         }
     }
 }

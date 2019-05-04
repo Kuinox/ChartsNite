@@ -17,24 +17,15 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseEventHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseEventHeader( CustomBinaryReaderAsync binaryReader )
         {
-            string id = await chunkReader.ReadStringAsync();
-            string group = await chunkReader.ReadStringAsync();
-            string metadata = await chunkReader.ReadStringAsync();
-            uint time1 = await chunkReader.ReadUInt32Async();
-            uint time2 = await chunkReader.ReadUInt32Async();
-            int eventSizeInBytes = await chunkReader.ReadInt32Async();
-            if( chunkReader.IsError || (!chunkReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await ErrorOnParseEventOrCheckpointHeader()) )
-            {
-                return false;
-            }
-            bool success = await ChooseEventChunkType( chunkReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ) );
-            if(!success || chunkReader.IsError)
-            {
-                return await ErrorOnParseEventHeader();
-            }
-            return true;
+            string id = await binaryReader.ReadStringAsync();
+            string group = await binaryReader.ReadStringAsync();
+            string metadata = await binaryReader.ReadStringAsync();
+            uint time1 = await binaryReader.ReadUInt32Async();
+            uint time2 = await binaryReader.ReadUInt32Async();
+            int eventSizeInBytes = await binaryReader.ReadInt32Async();
+            return await ChooseEventChunkType( binaryReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ) );
         }
         public virtual ValueTask<bool> ErrorOnParseEventHeader()
         {
@@ -45,7 +36,7 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns>always <see langword="true"/></returns>
-        public virtual ValueTask<bool> ChooseEventChunkType( ChunkReader chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>(true);
         }

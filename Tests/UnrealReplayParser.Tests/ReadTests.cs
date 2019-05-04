@@ -9,6 +9,7 @@ using NUnit.Framework;
 using FortniteReplayParser;
 using System.Linq;
 using UnrealReplayParser.Chunk;
+using UnrealReplayParser.UnrealObject;
 
 namespace UnrealReplayParser.Tests
 {
@@ -39,7 +40,7 @@ namespace UnrealReplayParser.Tests
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
                 await unrealVisitor.DidNotReceiveWithAnyArgs().ErrorOnChunkContentParsingAsync();
-                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<ChunkReader>(), Arg.Any<ChunkType>());
+                await unrealVisitor.ReceivedWithAnyArgs().ChooseChunkType(Arg.Any<CustomBinaryReaderAsync>(), Arg.Any<ChunkType>());
             }
         }
 

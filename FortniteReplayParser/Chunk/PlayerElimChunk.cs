@@ -9,12 +9,12 @@ namespace FortniteReplayParser.Chunk
     public class PlayerElimChunk : EventOrCheckpointInfo
     {
         public readonly bool CorrectlyParsed;
-        public readonly byte[] UnknownData;
+        public readonly Memory<byte> UnknownData;
         public readonly string PlayerKilled;
         public readonly string PlayerKilling;
         public readonly WeaponType Weapon;
         public readonly State VictimState;
-        public PlayerElimChunk(EventOrCheckpointInfo info, byte[] unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
+        public PlayerElimChunk(EventOrCheckpointInfo info, Memory<byte> unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
         {
             UnknownData = unknownData;
             PlayerKilled = playerKilled;

@@ -19,45 +19,56 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseCheckpointHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseCheckpointHeader( CustomBinaryReaderAsync binaryReader )
         {
-            string id = await chunkReader.ReadStringAsync();
-            string group = await chunkReader.ReadStringAsync();
-            string metadata = await chunkReader.ReadStringAsync();
-            uint time1 = await chunkReader.ReadUInt32Async();
-            uint time2 = await chunkReader.ReadUInt32Async();
-            int eventSizeInBytes = await chunkReader.ReadInt32Async();
-            if( chunkReader.IsError && !await ErrorOnParseEventOrCheckpointHeader() || (!chunkReader.AssertRemainingCountOfBytes( eventSizeInBytes ) && !await ErrorOnParseEventOrCheckpointHeader()) )
-            {
-                return false;
-            }
-            return await ParseCheckpointContent( await chunkReader.UncompressDataIfNeeded(), id, group, metadata, time1, time2 );
+            string id = await binaryReader.ReadStringAsync();
+            string group = await binaryReader.ReadStringAsync();
+            string metadata = await binaryReader.ReadStringAsync();
+            uint time1 = await binaryReader.ReadUInt32Async();
+            uint time2 = await binaryReader.ReadUInt32Async();
+            int eventSizeInBytes = await binaryReader.ReadInt32Async();
+            return ParseCheckpointContent( await binaryReader.UncompressData(), id, group, metadata, time1, time2 );
         }
 
-        public virtual async ValueTask<bool> ParseCheckpointContent( ChunkReader chunkReader, string id, string group, string metadata, uint time1, uint time2 )
+        public virtual bool ParseCheckpointContent( CustomBinaryReader binaryReader, string id, string group, string metadata, uint time1, uint time2 )
         {
-            long packetOffset = chunkReader.ReadInt64();
-            int levelForCheckpoint = chunkReader.ReadInt32();
+            long packetOffset = binaryReader.ReadInt64();
+            int levelForCheckpoint = binaryReader.ReadInt32();
 
-            string[] deletedNetStartupActors = await new SparseArrayParser<string, StringParser>( chunkReader, new StringParser( chunkReader ) ).Parse();
-
-
-            
-
-            int valuesCount = await chunkReader.ReadInt32Async();
+            string[] deletedNetStartupActors = binaryReader.ReadSparseArray( binaryReader.ReadString );
+            int valuesCount = binaryReader.ReadInt32();
             for( int i = 0; i < valuesCount; i++ )
             {
-                uint guid = await chunkReader.ReadIntPackedAsync();
-                uint outerGuid = await chunkReader.ReadIntPackedAsync();
-                string path = await chunkReader.ReadStringAsync();
-                uint checksum = await chunkReader.ReadUInt32Async();
-                byte flags = await chunkReader.ReadOneByteAsync();
+                uint guid = binaryReader.ReadIntPacked();
+                uint outerGuid = binaryReader.ReadIntPacked();
+                string path = binaryReader.ReadString();
+                uint checksum = binaryReader.ReadUInt32();
+                byte flags = binaryReader.ReadOneByte();
             }
-            //ParsePlaybackPacket( chunkReader );
-            File.WriteAllBytes( "dump.dump", await chunkReader.DumpRemainingBytesAsync() );
-            if(chunkReader.IsError)
-            {
+            NetFieldExportGroupMap( binaryReader );
+            ParsePlaybackPacket( binaryReader );
+           // File.WriteAllBytes( "dump.dump", binaryReader.DumpRemainingBytes() );
+            return true;
+        }
 
+        public virtual bool NetFieldExportGroupMap( CustomBinaryReader binaryReader )
+        {
+            uint numNetFieldExportGroups = binaryReader.ReadUInt32();
+            for( int i = 0; i < numNetFieldExportGroups; i++ )
+            {
+                ParseNetFieldExportGroup( binaryReader );
+            }
+            return true;
+        }
+
+        public virtual bool ParseNetFieldExportGroup( CustomBinaryReader binaryReader )
+        {
+            string a = binaryReader.ReadString();
+            uint packedInt = binaryReader.ReadIntPacked();
+            uint count = binaryReader.ReadIntPacked();
+            for( int i = 0; i < count; i++ )
+            {
+                binaryReader.ReadNetFieldExport( DemoHeader!.EngineNetworkProtocolVersion );
             }
             return true;
         }

@@ -4,8 +4,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.StreamHelpers;
-using Force.Crc32;
 using UnrealReplayParser.Chunk;
+using UnrealReplayParser.UnrealObject;
 using static UnrealReplayParser.ReplayHeader;
 
 namespace UnrealReplayParser
@@ -19,23 +19,17 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseReplayDataChunkHeader( ChunkReader chunkReader )
+        public virtual async ValueTask<bool> ParseReplayDataChunkHeader( CustomBinaryReaderAsync chunkReader )
         {
-            bool correctSize = true;
             uint time1 = uint.MaxValue;
             uint time2 = uint.MaxValue;
-            if( chunkReader.ReplayInfo.ReplayHeader.FileVersion >= ReplayVersionHistory.streamChunkTimes )
+            if( ReplayHeader!.FileVersion >= ReplayVersionHistory.streamChunkTimes )
             {
                 time1 = await chunkReader.ReadUInt32Async();
                 time2 = await chunkReader.ReadUInt32Async();
                 int replaySizeInBytes = await chunkReader.ReadInt32Async();
-                correctSize = chunkReader.AssertRemainingCountOfBytes( replaySizeInBytes );
             }
-            if( chunkReader.IsError || !correctSize && !ErrorOnParseReplayDataChunk() )
-            {
-                return false;
-            }
-            using( ChunkReader uncompressedData = await chunkReader.UncompressDataIfNeeded() )
+            using( CustomBinaryReader uncompressedData = await chunkReader.UncompressData() )//TODO: check compress
             {
                 return ParseReplayData( uncompressedData );
             }
@@ -47,11 +41,12 @@ namespace UnrealReplayParser
             return ErrorOnChunkContentParsing();
         }
 
-        public virtual bool ParseReplayData( ChunkReader chunkReader )
+        public virtual bool ParseReplayData( CustomBinaryReader streamReader )
         {
-            while( !chunkReader.EndOfStream )
+            if( !streamReader.BaseStream.CanSeek ) throw new ArgumentException();
+            while( streamReader.BaseStream.Length > streamReader.BaseStream.Position )
             {
-                if( !ParsePlaybackPacket( chunkReader ) )
+                if( !ParsePlaybackPacket( streamReader ) )
                 {
                     return false;
                 }
@@ -61,7 +56,7 @@ namespace UnrealReplayParser
 
 
 
-        public virtual (bool success, int amount) ParsePacket( ChunkReader chunkReader )
+        public virtual (bool success, int amount) ParsePacket( CustomBinaryReader chunkReader )
         {
             const int MaxBufferSize = 2 * 1024;
             int outBufferSize = chunkReader.ReadInt32();
@@ -107,7 +102,7 @@ namespace UnrealReplayParser
 
         //}
 
-        public virtual bool ParseExternalData( ChunkReader chunkReader )
+        public virtual bool ParseExternalData( CustomBinaryReader chunkReader )
         {
             while( true )
             {
@@ -122,13 +117,13 @@ namespace UnrealReplayParser
             }
         }
 
-        public virtual bool ParseExportData( ChunkReader binaryReader )
+        public virtual bool ParseExportData( CustomBinaryReader binaryReader )
         {
             return ParseNetFieldExports( binaryReader )
                 && ParseNetExportGUIDs( binaryReader );
         }
 
-        public virtual bool ParseNetFieldExports( ChunkReader binaryReader )//To network
+        public virtual bool ParseNetFieldExports( CustomBinaryReader binaryReader )
         {
             uint exportCount = binaryReader.ReadIntPacked();
             for( int i = 0; i < exportCount; i++ )
@@ -144,16 +139,12 @@ namespace UnrealReplayParser
                 {
                     //We does nothing here but Unreal does something
                 }
-                var netExports = binaryReader.ReadNetFieldExport();
-            }
-            if( binaryReader.IsError )
-            {
-                return ErrorOnParseNetFieldExports();
+                var netExports = binaryReader.ReadNetFieldExport( DemoHeader!.EngineNetworkProtocolVersion );
             }
             return true;
         }
 
-        public virtual bool ParseNetExportGUIDs( CustomBinaryReaderAsync binaryReader )
+        public virtual bool ParseNetExportGUIDs( CustomBinaryReader binaryReader )
         {
             uint guidCount = binaryReader.ReadIntPacked();
             for( int i = 0; i < guidCount; i++ )

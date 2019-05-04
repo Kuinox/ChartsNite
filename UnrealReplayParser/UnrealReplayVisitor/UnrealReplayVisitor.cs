@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
+using UnrealReplayParser.UnrealObject;
 
 namespace UnrealReplayParser
 {
@@ -26,31 +28,25 @@ namespace UnrealReplayParser
         }
 
         #region ReplayContentParsing
-        public virtual async ValueTask<bool> VisitReplayChunks( ReplayInfo replayInfo )
+        public virtual async ValueTask<bool> VisitChunks()
         {
             while( true )
             {
-                await using( ChunkReader? chunkReader = await ParseChunkHeader( replayInfo ) )
+                ChunkHeader chunkHeader = await ParseChunkHeader();
+                await using( SubStream stream = SubStreamFactory.CreateSubstream( chunkHeader.ChunkSize ) )
+                using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( stream, true ) )
                 {
-                    if( chunkReader.ChunkType == ChunkType.EndOfStream && !await VisitEndOfStream() )
+                    if( chunkHeader.ChunkType == ChunkType.EndOfStream )
                     {
+                        if( await VisitEndOfStream() )
+                        {
+                            continue;
+                        }
                         return true;
                     }
-                    if( chunkReader == null )
+                    if( !await ChooseChunkType( binaryReader, chunkHeader.ChunkType ) )
                     {
                         return false;
-                    }
-                    if( !await ChooseChunkType( chunkReader, chunkReader.ChunkType ) )
-                    {
-                        return false;
-                    }
-                    if( chunkReader.IsError )
-                    {
-                        chunkReader.SetErrorReported();
-                        if( !await ErrorOnChunkContentParsingAsync() )
-                        {
-                            return false;
-                        }
                     }
                 }
             }
@@ -66,28 +62,35 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="replayInfo"></param>
         /// <returns></returns>
-        public virtual async ValueTask<ChunkReader> ParseChunkHeader( ReplayInfo replayInfo )
+        public virtual async ValueTask<ChunkHeader> ParseChunkHeader()
         {
+            if( SubStreamFactory.CanReadLength && SubStreamFactory.CanReadPosition
+                && SubStreamFactory.BaseStream.Position == SubStreamFactory.BaseStream.Length )
+            {
+                return new ChunkHeader { ChunkType = ChunkType.EndOfStream, ChunkSize = 0 };
+            }
+
             int chunkSize;
             ChunkType chunkType;
             await using( SubStream chunkHeader = SubStreamFactory.CreateSubstream( 8 ) )
-            await using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
+            await using( CustomBinaryReaderAsync customReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
             {
-                chunkType = (ChunkType)await binaryReader.ReadUInt32Async();
-                if( binaryReader.EndOfStream )
+                try //TODO add case when you can seek.
                 {
-                    binaryReader.SetErrorReported();
-                    chunkHeader.CancelSelfRepositioning();//TODO: SubStream shouldn't throw when repositioning and out of byte.
-                    return new ChunkReader(ChunkType.EndOfStream, replayInfo);
+                    chunkType = (ChunkType)await customReader.ReadUInt32Async();
                 }
-                chunkSize = await binaryReader.ReadInt32Async();
-                if( binaryReader.IsError || (uint)chunkType > 3 )
+                catch( EndOfStreamException )
                 {
-                    binaryReader.SetErrorReported();
-                    return new ChunkReader( ChunkType.Unknown, replayInfo );
+                    chunkHeader.CancelSelfRepositioning();
+                    return new ChunkHeader { ChunkType = ChunkType.EndOfStream, ChunkSize = 0 };
+                }
+                chunkSize = await customReader.ReadInt32Async();
+                if( (uint)chunkType > 3 )
+                {
+                    return new ChunkHeader { ChunkType = ChunkType.Unknown, ChunkSize = 0 };
                 }
             }
-            return new ChunkReader(chunkType, SubStreamFactory.CreateSubstream( chunkSize ), replayInfo );
+            return new ChunkHeader { ChunkType = chunkType, ChunkSize = chunkSize };
         }
 
         /// <summary>
@@ -97,14 +100,14 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async ValueTask<bool> ChooseChunkType( ChunkReader chunkReader, ChunkType chunkType )
+        public virtual async ValueTask<bool> ChooseChunkType( CustomBinaryReaderAsync binaryReader, ChunkType chunkType )
         {
             return (chunkType switch
             {
                 ChunkType.Header => throw new InvalidOperationException( "Replay Header was already read." ),
-                ChunkType.Checkpoint => await ParseCheckpointHeader( chunkReader ),
-                ChunkType.Event => await ParseEventHeader( chunkReader ),
-                ChunkType.ReplayData =>  await ParseReplayDataChunkHeader( chunkReader ),
+                ChunkType.Checkpoint => await ParseCheckpointHeader( binaryReader ),
+                ChunkType.Event => await ParseEventHeader( binaryReader ),
+                ChunkType.ReplayData => await ParseReplayDataChunkHeader( binaryReader ),
                 _ => throw new InvalidOperationException( "Invalid ChunkType" )
             }) ? true : await ErrorOnChunkContentParsingAsync();
         }
@@ -114,7 +117,7 @@ namespace UnrealReplayParser
         /// <returns></returns>
         public virtual ValueTask<bool> ErrorOnChunkContentParsingAsync()
         {
-            return new ValueTask<bool>(true);
+            return new ValueTask<bool>( true );
         }
         /// <summary>
         /// Error inside chunk content parsing
@@ -166,8 +169,6 @@ namespace UnrealReplayParser
 
 
 
-        #region ChunkContentParsing
-        #endregion ChunkContentParsing
         #endregion ChunkParsing
 
         #endregion ReplayContentParsing

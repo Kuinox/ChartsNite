@@ -48,6 +48,7 @@ namespace Common.StreamHelpers
                     || positionInBit >> 3 == _data.Length - 1//Is in the last byte
                     && (positionInBit % 8) + 1 > (8 - _lastByteTruncatedBits); //and is in the truncated part
 #endif
+            return false;
         }
 
         /// <summary>
