@@ -3,13 +3,11 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
-
-    <NullableContextOptions>enable</NullableContextOptions>
-  <CheckForOverflowUnderflow Condition=" '$(Configuration)' == 'Debug' ">true</CheckForOverflowUnderflow>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NullableContextOptions>enable</NullableContextOptions>
+    <CheckForOverflowUnderflow Condition=" '$(Configuration)' == 'Debug' ">true</CheckForOverflowUnderflow>
   </PropertyGroup>
+
+
 
 </Project>

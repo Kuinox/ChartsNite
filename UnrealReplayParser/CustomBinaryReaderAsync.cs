@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,6 +15,7 @@ namespace Common.StreamHelpers
         readonly bool _leaveOpen;
         public CustomBinaryReaderAsync( Stream input, bool leaveOpen = false ) : base( input, leaveOpen )
         {
+            _leaveOpen = leaveOpen;
             if( input == null ) throw new ArgumentNullException( "input" );
             if( !input.CanRead ) throw new ArgumentException( "Can't read input stream." );
         }
@@ -38,13 +40,13 @@ namespace Common.StreamHelpers
             if( isUnicode )
             {
                 length = -length;
-                value = Encoding.Unicode.GetString( (await ReadBytesAsync( length * 2 )).Span );
+                value = Encoding.Unicode.GetString( (await ReadBytesAsync( length * 2 ))[0..Index.FromEnd( 2 )].Span );
             }
             else
             {
-                value = Encoding.ASCII.GetString( (await ReadBytesAsync( length )).Span );
+                value = Encoding.ASCII.GetString( (await ReadBytesAsync( length ))[0..Index.FromEnd( 1 )].Span );
             }
-            return value.Trim( ' ', '\0' );
+            return value;
         }
 
 
@@ -76,13 +78,16 @@ namespace Common.StreamHelpers
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns>Readable data uncompresed if it was needed</returns>
-        public virtual async ValueTask<CustomBinaryReader> UncompressData( )//TODO change what i return
+        public virtual async ValueTask<IMemoryOwner<byte>> UncompressData( )
         {
             int decompressedSize = await ReadInt32Async();
             int compressedSize = await ReadInt32Async();
-            Memory<byte> compressedBuffer = await ReadBytesAsync( compressedSize );//TODO: Use Memory<T>
-            return new CustomBinaryReader( new MemoryStream( OodleBinding.Decompress(compressedBuffer, decompressedSize)) );//TODO: is there nothing better ? https://github.com/Microsoft/Microsoft.IO.RecyclableMemoryStream
+            Memory<byte> compressedBuffer = await ReadBytesAsync( compressedSize );
+            return OodleBinding.Decompress( compressedBuffer, decompressedSize );
         }
+
+        
+
 
         public async ValueTask<T[]> ReadArrayAsync<T>( Func<ValueTask<T>> baseTypeParser )
         {
@@ -98,6 +103,10 @@ namespace Common.StreamHelpers
 
         public async ValueTask DisposeAsync()
         {
+            if(BaseStream.Position != BaseStream.Length)
+            {
+
+            }
             if( !_leaveOpen )
             {
                 await BaseStream.DisposeAsync();

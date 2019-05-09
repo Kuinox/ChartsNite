@@ -120,7 +120,7 @@ namespace Common.StreamHelpers
         async ValueTask<int> ReadWithoutChecksAsync( Memory<byte> memory, CancellationToken cancellationToken )
         {
             int toRead = memory.Length + Position <= Length ? memory.Length : (int)(Length - Position);
-            int read = await _stream.ReadAsync( memory[ 0..toRead], cancellationToken );
+            int read = await _stream.ReadAsync( memory[0..toRead], cancellationToken );
             _relativePosition += read;
             return read;
         }

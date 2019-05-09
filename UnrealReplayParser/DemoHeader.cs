@@ -6,7 +6,7 @@ namespace UnrealReplayParser
 {
     public class DemoHeader
     {
-        public DemoHeader( NetworkVersionHistory version, uint networkChecksum, EngineNetworkVersionHistory engineNetworkProtocolVersion, uint gameNetworkProtocolVerrsion, byte[] guid, ushort major, ushort minor, ushort patch, uint changeList, string branch, (string, uint)[] levelNamesAndTimes, ReplayHeaderFlags headerFlags, string[] gameSpecificData )
+        public DemoHeader( NetworkVersionHistory version, uint networkChecksum, EngineNetworkVersionHistory engineNetworkProtocolVersion, uint gameNetworkProtocolVerrsion, Guid guid, ushort major, ushort minor, ushort patch, uint changeList, string branch, (string, uint)[] levelNamesAndTimes, ReplayHeaderFlags headerFlags, string[] gameSpecificData )
         {
             Version = version;
             NetworkChecksum = networkChecksum;
@@ -27,7 +27,7 @@ namespace UnrealReplayParser
         public uint NetworkChecksum { get; }
         public EngineNetworkVersionHistory EngineNetworkProtocolVersion { get; }
         public uint GameNetworkProtocolVerrsion { get; }
-        public byte[] Guid { get; }
+        public Guid Guid { get; }
         public ushort Major { get; }
         public ushort Minor { get; }
         public ushort Patch { get; }

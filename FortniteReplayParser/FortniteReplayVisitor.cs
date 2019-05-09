@@ -15,7 +15,7 @@ namespace FortniteReplayParser
         {
         }
 
-        public override ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group switch
+        public override ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group.Trim('\0') switch
         {
             "playerElim" => VisitPlayerElimChunk( chunkReader, eventInfo ),
             "AthenaMatchStats" => VisitAthenaMatchStats( eventInfo ),

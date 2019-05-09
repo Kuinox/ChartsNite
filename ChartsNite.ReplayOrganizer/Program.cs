@@ -15,6 +15,24 @@ namespace ChartsNite.ReplayOrganizer
     {
         static /*async Task*/void Main()
         {
+            var splitted = "10 20 83 45 E1 79 04 0C FE 5C 60 64 D9 88 1A 4F B8 DA 05 9A 0D BF 97 07 40 1C 20 DB CA A6 A2 06 01 90 74 97 1A 01 20 F6 6A B6 76 80 E0 8E 80 40 0D 01 17 18 59 36 A2 C6 13 AE 76 81 5A C3 EF E5 01 30 00 00 00 00 00 00 00 00 A0 D7 10 B2 10 7B 35 5B FB 74 17 00 10 26 01 22 60 3A 6C 02 F0 40 30 02".Split( ' ' );
+            List<byte> byteList = new List<byte>();
+            foreach( string hex in splitted )
+            {
+                byte value = Convert.ToByte( hex, 16 );
+                byteList.Add( value );
+            }
+            var byteArray = byteList.ToArray();
+            var reader = new BitReader( byteArray );
+            for( int i = 0; i < byteArray.Length * 8; i++ )
+            {
+                var bytesIJustRead = reader.ReadBytesAt( i, 4 );
+                Console.WriteLine( BitConverter.ToString( bytesIJustRead ) + "int:"+ BitConverter.ToUInt32(bytesIJustRead) );
+            }
+
+
+            //12
+
             //            using( var excelPackage = new ExcelPackage() )
             //            {
             //                ExcelWorksheet replayWorksheet = excelPackage.Workbook.Worksheets.Add( "replayName" );

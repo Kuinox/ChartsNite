@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -27,31 +28,36 @@ namespace UnrealReplayParser
             uint time1 = await binaryReader.ReadUInt32Async();
             uint time2 = await binaryReader.ReadUInt32Async();
             int eventSizeInBytes = await binaryReader.ReadInt32Async();
-            return ParseCheckpointContent( await binaryReader.UncompressData(), id, group, metadata, time1, time2 );
+            using( IMemoryOwner<byte> uncompressed = await binaryReader.UncompressData() )
+            {
+                
+                return ParseCheckpointContent( new MemoryReader( uncompressed.Memory, Endianness.Native ), id, group, metadata, time1, time2 );
+            }
+            
         }
 
-        public virtual bool ParseCheckpointContent( CustomBinaryReader binaryReader, string id, string group, string metadata, uint time1, uint time2 )
+        public virtual bool ParseCheckpointContent(MemoryReader reader, string id, string group, string metadata, uint time1, uint time2 )
         {
-            long packetOffset = binaryReader.ReadInt64();
-            int levelForCheckpoint = binaryReader.ReadInt32();
+            long packetOffset = reader.ReadInt64();
+            int levelForCheckpoint = reader.ReadInt32();
 
-            string[] deletedNetStartupActors = binaryReader.ReadSparseArray( binaryReader.ReadString );
-            int valuesCount = binaryReader.ReadInt32();
+            string[] deletedNetStartupActors = reader.ReadSparseArray( reader.ReadString );
+            int valuesCount = reader.ReadInt32();
             for( int i = 0; i < valuesCount; i++ )
             {
-                uint guid = binaryReader.ReadIntPacked();
-                uint outerGuid = binaryReader.ReadIntPacked();
-                string path = binaryReader.ReadString();
-                uint checksum = binaryReader.ReadUInt32();
-                byte flags = binaryReader.ReadOneByte();
+                uint guid = reader.ReadIntPacked();
+                uint outerGuid = reader.ReadIntPacked();
+                string path = reader.ReadString();
+                uint checksum = reader.ReadUInt32();
+                byte flags = reader.ReadOneByte();
             }
-            NetFieldExportGroupMap( binaryReader );
-            ParsePlaybackPacket( binaryReader );
+            NetFieldExportGroupMap( reader );
+            ParsePlaybackPacket( reader );
            // File.WriteAllBytes( "dump.dump", binaryReader.DumpRemainingBytes() );
             return true;
         }
 
-        public virtual bool NetFieldExportGroupMap( CustomBinaryReader binaryReader )
+        public virtual bool NetFieldExportGroupMap( MemoryReader binaryReader )
         {
             uint numNetFieldExportGroups = binaryReader.ReadUInt32();
             for( int i = 0; i < numNetFieldExportGroups; i++ )
@@ -61,7 +67,7 @@ namespace UnrealReplayParser
             return true;
         }
 
-        public virtual bool ParseNetFieldExportGroup( CustomBinaryReader binaryReader )
+        public virtual bool ParseNetFieldExportGroup( MemoryReader binaryReader )
         {
             string a = binaryReader.ReadString();
             uint packedInt = binaryReader.ReadIntPacked();

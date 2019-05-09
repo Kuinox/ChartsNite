@@ -110,10 +110,10 @@ namespace UnrealReplayParser
             uint networkChecksum = await binaryReader.ReadUInt32Async();
             EngineNetworkVersionHistory engineNetworkProtocolVersion = (EngineNetworkVersionHistory)await binaryReader.ReadUInt32Async();
             uint gameNetworkProtocolVersion = await binaryReader.ReadUInt32Async();
-            byte[] guid = new byte[0];
+            Guid guid = Guid.Empty;
             if( version >= NetworkVersionHistory.guidDemoHeader )
             {
-                guid = (await binaryReader.ReadBytesAsync( 16 )).ToArray();
+                guid = new Guid((await binaryReader.ReadBytesAsync( 16 )).Span);
             }
             ushort major = await binaryReader.ReadUInt16Async();
             ushort minor = await binaryReader.ReadUInt16Async();
