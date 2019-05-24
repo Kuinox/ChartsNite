@@ -1,9 +1,0 @@
-﻿--SetupConfig: {}
-create transformer on CK.sUserDestroy
-as
-begin
-	inject "
-		update ChartsNite.tKill set KillerId = 0 where KillerId = @UserId;
-		update ChartsNite.tReplay set OwnerId = 0 where OwnerId = @UserId;"
-	into "PreDestroy";
-end

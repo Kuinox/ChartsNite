@@ -368,3 +368,8 @@ Logs/
 
 Analyzer/replays\.zip
 Binaries/oo2core_5_win64\.dll
+
+Tests/**/TestResult*.xml
+CodeCakeBuilder/UnitTestsDone.*.txt
+Tests/**/Logs/
+Tests/**/CKSetup-WorkingDir/

@@ -1,0 +1,5 @@
+<RepositoryInfo xmlns="http://csemver.org/schemas/2015">
+  <Branches>
+    <Branch Name="develop" VersionName="develop" CIVersionMode="LastReleaseBased" />
+  </Branches>
+</RepositoryInfo>

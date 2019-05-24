@@ -1,0 +1,4 @@
+-- Version: 1
+-- Keys below can be removed if needed.
+NUGET_PUSH_API_KEY
+ > kMJSeSRYuCJv+2iUo3qvlihjSr18mgD5tS1md0/foVmiOmCVv3d+Con6WShICWSX/58Pt2mNWLqOresJxwPdjgiq2J4IC3BDYLYeMFzoNRk=

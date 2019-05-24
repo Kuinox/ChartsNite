@@ -21,7 +21,7 @@ namespace Benchmark
             
             Stopwatch realTime = new Stopwatch();
             realTime.Start();
-            var paths = new ReplayFetcher().GetAllReplaysPath().ToList().Where(p=>p.Contains( "replay24-05.replay") || p.Contains("newshinyreplay.replay") );
+            var paths = new ReplayFetcher().GetAllReplaysPath().ToList(); //.Where(p=>p.Contains( "replay24-05.replay") || p.Contains("newshinyreplay.replay") )
             foreach(var path in paths)
             {
                 Stopwatch stopwatch = new Stopwatch();

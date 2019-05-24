@@ -3,18 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28531.58
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnrealReplayParser", "UnrealReplayParser\UnrealReplayParser.csproj", "{58837BBD-763D-4946-A1B2-A5B254C03290}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.UnrealReplayParser", "ChartsNite.UnrealReplayParser\ChartsNite.UnrealReplayParser.csproj", "{58837BBD-763D-4946-A1B2-A5B254C03290}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FortniteReplayParser", "FortniteReplayParser\FortniteReplayParser.csproj", "{BA9B2543-D638-470F-A98B-D7C4F00E5B47}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApp", "WebApp\WebApp.csproj", "{0640EAE6-2780-44B6-819A-A59A0F6288DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.FortniteReplayParser", "ChartsNite.FortniteReplayParser\ChartsNite.FortniteReplayParser.csproj", "{BA9B2543-D638-470F-A98B-D7C4F00E5B47}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{EF0BBD89-62E1-4312-94CF-5530C6CA520C}"
 	ProjectSection(SolutionItems) = preProject
 		TestHelper.config = TestHelper.config
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.Data", "ChartsNite.Data\ChartsNite.Data.csproj", "{76620569-D3C3-42CC-ACDE-C43F57E50271}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{37C7884F-D033-444C-B7DE-8C4AA2F79060}"
 	ProjectSection(SolutionItems) = preProject
@@ -22,17 +18,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Shared.props = Shared.props
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.Data.Tests", "Tests\ChartsNite.Data.Tests\ChartsNite.Data.Tests.csproj", "{63CC7ECB-96C8-4798-AB10-08232D9D25A9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnrealReplayParser.Tests", "Tests\UnrealReplayParser.Tests\UnrealReplayParser.Tests.csproj", "{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.UnrealReplayParser.Tests", "Tests\ChartsNite.UnrealReplayParser.Tests\ChartsNite.UnrealReplayParser.Tests.csproj", "{AAAD35BE-90D1-4BEA-88CE-F35438FF067E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChartsNite.ReplayOrganizer", "ChartsNite.ReplayOrganizer\ChartsNite.ReplayOrganizer.csproj", "{4344C4DF-5800-428E-ABDA-D1859EC618DB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common.Tests", "Tests\Common.Tests\Common.Tests.csproj", "{687CA695-B432-479C-A047-A3BFC1983673}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmark", "Benchmark\Benchmark.csproj", "{A98EB816-DD89-4A3C-8F64-E2473643476E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmark", "Benchmark\Benchmark.csproj", "{A98EB816-DD89-4A3C-8F64-E2473643476E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{70654330-560D-4CBD-A1A5-DEF9A283849A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,18 +44,6 @@ Global
 		{BA9B2543-D638-470F-A98B-D7C4F00E5B47}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA9B2543-D638-470F-A98B-D7C4F00E5B47}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA9B2543-D638-470F-A98B-D7C4F00E5B47}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0640EAE6-2780-44B6-819A-A59A0F6288DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0640EAE6-2780-44B6-819A-A59A0F6288DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0640EAE6-2780-44B6-819A-A59A0F6288DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0640EAE6-2780-44B6-819A-A59A0F6288DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76620569-D3C3-42CC-ACDE-C43F57E50271}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76620569-D3C3-42CC-ACDE-C43F57E50271}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76620569-D3C3-42CC-ACDE-C43F57E50271}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76620569-D3C3-42CC-ACDE-C43F57E50271}.Release|Any CPU.Build.0 = Release|Any CPU
-		{63CC7ECB-96C8-4798-AB10-08232D9D25A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{63CC7ECB-96C8-4798-AB10-08232D9D25A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{63CC7ECB-96C8-4798-AB10-08232D9D25A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{63CC7ECB-96C8-4798-AB10-08232D9D25A9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B89E469-E4B0-47E8-A9EC-C20A7AB52AE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -80,12 +64,15 @@ Global
 		{A98EB816-DD89-4A3C-8F64-E2473643476E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A98EB816-DD89-4A3C-8F64-E2473643476E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A98EB816-DD89-4A3C-8F64-E2473643476E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70654330-560D-4CBD-A1A5-DEF9A283849A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70654330-560D-4CBD-A1A5-DEF9A283849A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70654330-560D-4CBD-A1A5-DEF9A283849A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70654330-560D-4CBD-A1A5-DEF9A283849A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{63CC7ECB-96C8-4798-AB10-08232D9D25A9} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 		{AAAD35BE-90D1-4BEA-88CE-F35438FF067E} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 		{687CA695-B432-479C-A047-A3BFC1983673} = {EF0BBD89-62E1-4312-94CF-5530C6CA520C}
 	EndGlobalSection

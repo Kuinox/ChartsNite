@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tests\UnrealReplayParser.Tests\UnrealReplayParser.Tests.csproj" />
-    <ProjectReference Include="..\UnrealReplayParser\UnrealReplayParser.csproj" />
+    <ProjectReference Include="..\Tests\ChartsNite.UnrealReplayParser.Tests\ChartsNite.UnrealReplayParser.Tests.csproj" />
+    <ProjectReference Include="..\ChartsNite.UnrealReplayParser\ChartsNite.UnrealReplayParser.csproj" />
   </ItemGroup>
 
 
