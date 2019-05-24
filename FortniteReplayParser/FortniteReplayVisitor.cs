@@ -15,7 +15,7 @@ namespace FortniteReplayParser
         {
         }
 
-        public override ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group.Trim('\0') switch
+        public override ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo ) => eventInfo.Group.Trim( '\0' ) switch
         {
             "playerElim" => VisitPlayerElimChunk( chunkReader, eventInfo ),
             "AthenaMatchStats" => VisitAthenaMatchStats( eventInfo ),
@@ -38,9 +38,10 @@ namespace FortniteReplayParser
         {
             return new ValueTask<bool>( true );
         }
-        public virtual ValueTask<bool> VisitUnknowEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
+        public virtual async ValueTask<bool> VisitUnknowEventChunkType( CustomBinaryReaderAsync chunkReader, EventOrCheckpointInfo eventInfo )
         {
-            throw new InvalidDataException( "I throw exceptions when i see a type of chunks i never saw." );
+            // throw new InvalidDataException( "I throw exceptions when i see a type of chunks i never saw." );
+            return true;
         }
 
         public virtual ValueTask<bool> VisitAthenaMatchStats( EventOrCheckpointInfo eventInfo )
@@ -54,6 +55,22 @@ namespace FortniteReplayParser
         public virtual async ValueTask<bool> VisitPlayerElimChunk( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
         {
             int amountToSkip;
+            if( (int) DemoHeader!.EngineNetworkProtocolVersion >= 11 )
+            {
+                if( DemoHeader!.Branch == "++Fortnite+Release-4.0" || DemoHeader!.Branch == "++Fortnite+Release-4.2" )
+                {
+                    throw new InvalidOperationException();
+                }
+
+                Memory<byte> a = await binaryReader.ReadBytesAsync( 87 );
+                var killedId = PlayerId.FromEpicId((await binaryReader.ReadBytesAsync( 16 )).ToArray());
+                Debug.Assert(await binaryReader.ReadInt16Async()==4113);//wtf is this
+                var killerId = PlayerId.FromEpicId( (await binaryReader.ReadBytesAsync( 16 )).ToArray() );
+                PlayerElimChunk.WeaponType newWeapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadByteAsync();
+                PlayerElimChunk.State newVictimState = (PlayerElimChunk.State)await binaryReader.ReadInt32Async();
+                return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, killedId, killerId, newWeapon, newVictimState ) );
+
+            }
             switch( DemoHeader!.Branch )
             {
                 case "++Fortnite+Release-4.0":
@@ -67,12 +84,11 @@ namespace FortniteReplayParser
                     break;
             }
             Memory<byte> unknownData = await binaryReader.ReadBytesAsync( amountToSkip );
-            
-            string killed = await binaryReader.ReadStringAsync();
-            string killer = await binaryReader.ReadStringAsync();
+            PlayerId killed = PlayerId.FromPlayerName( await binaryReader.ReadStringAsync() );
+            PlayerId killer = PlayerId.FromPlayerName( await binaryReader.ReadStringAsync() );
             PlayerElimChunk.WeaponType weapon = (PlayerElimChunk.WeaponType)await binaryReader.ReadByteAsync();
             PlayerElimChunk.State victimState = (PlayerElimChunk.State)await binaryReader.ReadInt32Async();
-            return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, unknownData, killed, killer, weapon, victimState ) );
+            return await VisitPlayerElimResult( new PlayerElimChunk( eventInfo, killed, killer, weapon, victimState ) );
         }
 
         public virtual ValueTask<bool> VisitPlayerElimResult( PlayerElimChunk playerElim )

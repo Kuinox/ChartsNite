@@ -33,8 +33,9 @@ namespace UnrealReplayParser
             }
             using( IMemoryOwner<byte> uncompressedData = await chunkReader.UncompressData() )//TODO: check compress
             {
-                return ParseReplayData( new MemoryReader( uncompressedData.Memory, Endianness.Native ));
+                //return ParseReplayData( new MemoryReader( uncompressedData.Memory, Endianness.Native ));
             }
+            return true;
 
         }
 
