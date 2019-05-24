@@ -24,6 +24,8 @@ public class MemoryReader
     public int Length => _baseMemory.Length;
     public int Offset { get; set; }
 
+    public bool EndOfSpan => Offset >= _baseMemory.Length;
+
     public Memory<byte> Slice => _baseMemory.Slice( Offset );
 
     public Memory<byte> ReadBytes( int length )
@@ -156,6 +158,80 @@ public class MemoryReader
 
         result = Unsafe.As<ulong, double>( ref value );
         return success;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public short PeekInt16()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadInt16LittleEndian( Slice.Span, out short result )
+            : TryReadInt16BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public int PeekInt32()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadInt32LittleEndian( Slice.Span, out int result )
+            : TryReadInt32BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public long PeekInt64()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadInt64LittleEndian( Slice.Span, out long result )
+            : TryReadInt64BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public ushort PeekUInt16()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadUInt16LittleEndian( Slice.Span, out ushort result )
+            : TryReadUInt16BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public uint PeekUInt32()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadUInt32LittleEndian( Slice.Span, out uint result )
+            : TryReadUInt32BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public ulong PeekUInt64()
+    {
+        bool success = CurrentEndianness == Endianness.Little
+            ? TryReadUInt64LittleEndian( Slice.Span, out ulong result )
+            : TryReadUInt64BigEndian( Slice.Span, out result );
+
+        return result;
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public float PeekSingle()
+    {
+        uint value = PeekUInt32();
+        return Unsafe.As<uint, float>( ref value );
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public double PeekDouble()
+    {
+        ulong value = PeekUInt64();
+        return Unsafe.As<ulong, double>( ref value );
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining )]

@@ -97,7 +97,77 @@ namespace UnrealReplayParser
         {
             Incoming( reader );
             ReceivedPacket( reader );
-            
+            if( !reader.AtEnd )
+            {
+                if( DemoHeader!.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_ACKS_INCLUDED_IN_HEADER )
+                {
+                    reader.ReadBit();
+                }
+
+                int startPos = (int)reader.BitPosition;
+                bool control = reader.ReadBit();
+                bool open = control ? reader.ReadBit() : false;
+                bool close = control ? reader.ReadBit() : false;
+
+                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_CLOSE_REASON )
+                {
+                    bool dormant = close ? reader.ReadBit() : false;
+
+                }
+                else
+                {
+                    uint closeReason = close ? reader.ReadSerialisedInt( 15 ) : 0;
+                }
+
+                bool isReplicationPaused = reader.ReadBit();
+                bool reliable = reader.ReadBit();
+
+                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_MAX_ACTOR_CHANNELS_CUSTOMIZATION )
+                {
+                    uint chIndex = reader.ReadSerialisedInt( 10240 );
+                }
+                else
+                {
+                    uint chIndex = reader.ReadIntPacked();//TODO: this don't work
+                }
+                bool hasPackageMapExports = reader.ReadBit();
+                bool hasMustBeMappedGUIDs = reader.ReadBit();
+                bool partial = reader.ReadBit();
+
+                if( reliable )
+                {
+                    if( true )
+                    {
+
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                else if( partial )
+                {
+
+                }
+                else
+                {
+                    //This is modifying a value but not reading int the reader
+                }
+
+                bool partialInitial = partial ? reader.ReadBit() : false;
+                bool partialFinal = partial ? reader.ReadBit() : false;
+                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    if(reliable || open)
+                    {
+
+                    }
+                }
+            }
             return true;
         }
         static Stream FileDump = File.OpenWrite( "dumppackets.dump" );
@@ -119,86 +189,6 @@ namespace UnrealReplayParser
         {
             ReadHeader( reader );
             ReadPacketInfo( reader );
-            if( !reader.AtEnd )//TODO: to while
-            {
-                if( DemoHeader!.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_ACKS_INCLUDED_IN_HEADER )
-                {
-                    reader.ReadBit();
-                }
-
-                int startPos = (int)reader.BitPosition;
-                ReadBunch( reader );
-            }
-            return true;
-        }
-
-        public virtual bool ReadBunch (BitReader reader)
-        {
-            bool control = reader.ReadBit();
-            bool open = control ? reader.ReadBit() : false;
-            bool close = control ? reader.ReadBit() : false;
-
-            if( DemoHeader!.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_CLOSE_REASON )
-            {
-                bool dormant = close ? reader.ReadBit() : false;
-            }
-            else
-            {
-                uint closeReason = close ? reader.ReadSerialisedInt( 15 ) : 0;
-            }
-
-            bool isReplicationPaused = reader.ReadBit();
-            bool reliable = reader.ReadBit();
-
-            if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_MAX_ACTOR_CHANNELS_CUSTOMIZATION )
-            {
-                uint chIndex = reader.ReadSerialisedInt( 10240 );
-            }
-            else
-            {
-                uint chIndex = reader.ReadIntPacked();//TODO: this don't work
-                if(chIndex >= 32767 ) // default value, maybe your game has overrided this value
-                {
-                    throw new InvalidDataException();
-                }
-            }
-            bool hasPackageMapExports = reader.ReadBit();
-            bool hasMustBeMappedGUIDs = reader.ReadBit();
-            bool partial = reader.ReadBit();
-
-            //if( reliable )//stuff not reading
-            //{
-            //    if( true )
-            //    {
-
-            //    }
-            //    else
-            //    {
-            //        throw new NotImplementedException();
-            //    }
-            //}
-            //else if( partial )
-            //{
-
-            //}
-            //else
-            //{
-            //    //This is modifying a value but not reading int the reader
-            //}
-
-            bool partialInitial = partial ? reader.ReadBit() : false;
-            bool partialFinal = partial ? reader.ReadBit() : false;
-            if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                if( reliable || open )
-                {
-
-                }
-            }
             return true;
         }
 

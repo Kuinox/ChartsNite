@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
-using UnrealReplayParser.UnrealObject.Types;
-using static UnrealReplayParser.DemoHeader;
 
 namespace Common.StreamHelpers
 {
@@ -129,7 +127,7 @@ namespace Common.StreamHelpers
         }
 
         public uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian( ReadBytes( 4 ) );
-        public int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian( ReadBytes( 4 ) );
+
         /// <summary>
         /// Read multiple bytes and advance the cursor of 8 per bytes read
         /// </summary>
@@ -197,35 +195,14 @@ namespace Common.StreamHelpers
                     uint byteAsWord = (byte)(aByte >> 1);
                     value = (byteAsWord << shiftCount) | value;
                     ++src;
-                    if( !nextByteIndicator ) break;
+                    if( nextByteIndicator )
+                    {
+                        break;
+                    }
                 }
             }
             return value;
         }
-
-        public StaticName ReadStaticName( EngineNetworkVersionHistory versionHistory )
-        {
-            bool hardcoded = ReadBit();
-            if( hardcoded )
-            {
-                if( versionHistory < EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
-                {
-                    return new StaticName( ReadSerialisedInt(411), "", true );
-                }
-                else
-                {
-                    return new StaticName( ReadIntPacked(), "", true );
-                }
-                //hard coded names in "UnrealNames.inl"
-            }
-            else
-            {
-                string inString = ReadString();
-                int inNumber = ReadInt32();
-                return new StaticName( (uint)inNumber, inString, false );
-            }
-        }
-
 
         /// <summary>
         /// Truncate the data by the end.
