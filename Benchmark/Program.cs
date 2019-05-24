@@ -21,7 +21,7 @@ namespace Benchmark
             
             Stopwatch realTime = new Stopwatch();
             realTime.Start();
-            var paths = new ReplayFetcher().GetAllReplaysPath().ToList();
+            var paths = new ReplayFetcher().GetAllReplaysPath().ToList().Where(p=>p.Contains( "replay24-05.replay") || p.Contains("newshinyreplay.replay") );
             foreach(var path in paths)
             {
                 Stopwatch stopwatch = new Stopwatch();
@@ -38,7 +38,6 @@ namespace Benchmark
                     times.Enqueue( stopwatch.Elapsed );
                     Console.WriteLine( $"Done time:{stopwatch.ElapsedMilliseconds.ToString().PadRight( 4 )}ms, speed:{(replayStream.Length / 1024 / 1024 / stopwatch.Elapsed.TotalSeconds).ToString( "0.00" ).PadRight( 5 ) } path: {Path.GetFileNameWithoutExtension( path )}" );
                     stopwatch.Reset();
-
                 }
             } 
             double totalTime = times.Sum( p => p.TotalSeconds );

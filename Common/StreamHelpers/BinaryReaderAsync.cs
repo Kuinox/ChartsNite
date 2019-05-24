@@ -184,7 +184,7 @@ namespace System.IO
                 bytesRead += n;
             } while( bytesRead < numBytes );
             Debug.Assert( bytesRead == numBytes );
-            return _buffer;
+            return _buffer[0..numBytes];
         }
 
         // FillBuffer is not performing well when reading from MemoryStreams as it is using the public Stream interface.

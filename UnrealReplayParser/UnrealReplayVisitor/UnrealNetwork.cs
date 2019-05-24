@@ -70,16 +70,16 @@ namespace UnrealReplayParser
             ParseExternalData( reader );
             uint seenLevelIndex = 0;
 
-            while( true )
-            {
-                if( hasLevelStreamingFixes )
-                {
-                    seenLevelIndex = reader.ReadIntPacked();
-                }
-                int amount = ParsePacket( reader );
-                if( amount == 0 ) break;
-                if( appendPacket ) continue;
-            }//There is more data ?
+            //while( true )
+            //{
+            //    if( hasLevelStreamingFixes )
+            //    {
+            //        seenLevelIndex = reader.ReadIntPacked();
+            //    }
+            //    int amount = ParsePacket( reader );
+            //    if( amount == 0 ) break;
+            //    if( appendPacket ) continue;
+            //}//There is more data ?
             return true;
         }
 

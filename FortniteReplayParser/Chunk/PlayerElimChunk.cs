@@ -6,20 +6,45 @@ using UnrealReplayParser;
 
 namespace FortniteReplayParser.Chunk
 {
+    public readonly struct PlayerId
+    {
+        public enum Kind
+        {
+            UserName,
+            EpicId
+        }
+
+        public readonly Kind IdKind;
+        public readonly string PlayerNameOrEpicId;
+        PlayerId(Kind kind, string playerNameOrEpicId )
+        {
+            IdKind = kind;
+            PlayerNameOrEpicId = playerNameOrEpicId;
+        }
+
+        public static PlayerId FromPlayerName( string username ) => new PlayerId(Kind.UserName, username );
+        public static PlayerId FromEpicId( byte[] idBytes )
+        {
+            if( idBytes.Length != 16 ) throw new ArgumentException();
+            string idString = BitConverter.ToString( idBytes ).Replace( "-", "" ).ToLower();
+            return new PlayerId( Kind.EpicId, idString );
+        }
+    }
     public class PlayerElimChunk : EventOrCheckpointInfo
     {
         public readonly bool CorrectlyParsed;
-        public readonly Memory<byte> UnknownData;
-        public readonly string PlayerKilled;
-        public readonly string PlayerKilling;
+        public readonly PlayerId PlayerKilled;
+        public readonly PlayerId PlayerKilling;
+        [Obsolete("Weapons change at each update, not reliable.")]
         public readonly WeaponType Weapon;
         public readonly State VictimState;
-        public PlayerElimChunk(EventOrCheckpointInfo info, Memory<byte> unknownData, string playerKilled, string playerKilling, WeaponType weapon, State victimState) :base(info)
+        public PlayerElimChunk(EventOrCheckpointInfo info, PlayerId playerKilled, PlayerId playerKilling, WeaponType weapon, State victimState) :base(info)
         {
-            UnknownData = unknownData;
             PlayerKilled = playerKilled;
             PlayerKilling = playerKilling;
+#pragma warning disable CS0618 // Type or member is obsolete
             Weapon = weapon;
+#pragma warning restore CS0618 // Type or member is obsolete
             VictimState = victimState;
         }
         public enum State
@@ -28,7 +53,6 @@ namespace FortniteReplayParser.Chunk
             KnockedDown,
             Unknow = int.MaxValue
         }
-
         public enum WeaponType : byte
         {
             Storm = 0,
