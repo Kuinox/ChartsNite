@@ -73,7 +73,7 @@ namespace UnrealReplayParser
         {
             None = 0,
             ClientRecorded = (1 << 0),
-            HasStreamingFixes = (1 << 1),
+            HasStreamingFixes = (1 << 1)
         };
     }
 }

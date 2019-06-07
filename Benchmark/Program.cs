@@ -15,13 +15,12 @@ namespace Benchmark
     {
         static async Task Main()
         {
-
             ConcurrentQueue<TimeSpan> times = new ConcurrentQueue<TimeSpan>();
             ConcurrentQueue<long> sizes = new ConcurrentQueue<long>();
             
             Stopwatch realTime = new Stopwatch();
             realTime.Start();
-            var paths = new ReplayFetcher().GetAllReplaysPath().ToList(); //.Where(p=>p.Contains( "replay24-05.replay") || p.Contains("newshinyreplay.replay") )
+            var paths = new ReplayFetcher().GetAllReplaysPath().ToList().Where(p=>p.Contains( "UnsavedReplay-2019.06.07-12.53.37.replay" ) ); //.Where(p=>p.Contains( "replay24 -05.replay") || p.Contains("newshinyreplay.replay") )
             foreach(var path in paths)
             {
                 Stopwatch stopwatch = new Stopwatch();

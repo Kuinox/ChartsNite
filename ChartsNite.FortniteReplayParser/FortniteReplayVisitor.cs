@@ -63,6 +63,7 @@ namespace FortniteReplayParser
                 }
 
                 Memory<byte> a = await binaryReader.ReadBytesAsync( 87 );
+                Console.WriteLine( BitConverter.ToString( a.Span.ToArray() )) ;
                 var killedId = PlayerId.FromEpicId((await binaryReader.ReadBytesAsync( 16 )).ToArray());
                 Debug.Assert(await binaryReader.ReadInt16Async()==4113);//wtf is this
                 var killerId = PlayerId.FromEpicId( (await binaryReader.ReadBytesAsync( 16 )).ToArray() );
@@ -94,11 +95,6 @@ namespace FortniteReplayParser
         public virtual ValueTask<bool> VisitPlayerElimResult( PlayerElimChunk playerElim )
         {
             return new ValueTask<bool>( true );
-        }
-
-        public virtual ValueTask<bool> VisitHeaderChunkWhereWeDidntReadAllData()
-        {
-            return new ValueTask<bool>( false );
         }
     }
 }
