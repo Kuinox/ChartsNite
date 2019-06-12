@@ -9,6 +9,7 @@ using NuGet.Credentials;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Protocol.Plugins;
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
@@ -501,10 +502,10 @@ namespace CodeCake
             public string FeedName { get; }
 
             /// <summary>
-            /// Implements Package promotion in @CI, @Preview, @Latest and @Stable views.
+            /// Implements Package promotion in @CI, @Exploratory, @Preview, @Latest and @Stable views.
             /// </summary>
             /// <param name="ctx">The Cake context.</param>
-            /// <param name="path">The path where the .nupkg mus be found.</param>
+            /// <param name="pushes">The set of artifacts to promote.</param>
             /// <returns>The awaitable.</returns>
             protected override async Task OnAllArtifactsPushed( IEnumerable<ArtifactPush> pushes )
             {

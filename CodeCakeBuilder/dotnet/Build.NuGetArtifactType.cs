@@ -1,5 +1,4 @@
 using Cake.Common.Solution;
-using Cake.Core;
 using CodeCake.Abstractions;
 using CSemVer;
 using System.Collections.Generic;

@@ -17,12 +17,9 @@
     <PackageReference Include="CK.Text" Version="8.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Cake.Npm" Version="0.16.0" />
+    <PackageReference Include="NuGet.Protocol" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="5.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="NuGet.Credentials" Version="5.0.0" />
+    <PackageReference Include="NuGet.Credentials" Version="5.1.0" />
   </ItemGroup>
 </Project>

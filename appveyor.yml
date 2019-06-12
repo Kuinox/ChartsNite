@@ -1,12 +1,12 @@
 
 environment:
   CODECAKEBUILDER_SECRET_KEY:
-    secure: sQREuld5pncttq91qUMGmZs/7x0UFMQob6hcgbC+qqg=
+    secure: v406E49rwwPSJZ3gScoaN7wkNW7yhjjz1eXvhS/qJ1E=
 install:
   - ps: ./CodeCakeBuilder/InstallCredentialProvider.ps1
 version: build{build}
 image: Visual Studio 2017
-clone_folder: C:\CK-World\Kuinox-Projects\ChartsNite
+clone_folder: C:\CKli-World\Kuinox-Projects\ChartsNite
 branches:
   only:
     - master

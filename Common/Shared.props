@@ -11,8 +11,9 @@
   <!--<StandardProperties>-->
   <PropertyGroup>
     <RepositoryUrl>https://github.com/Kuinox/ChartsNite.git</RepositoryUrl>
-    <ProductName>ChartsNite</ProductName>
-    <Authors>Kuinox</Authors>
+    <ProductName>Kuinox</ProductName>
+    <Company>Signature Code</Company>
+    <Authors>Signature Code</Authors>
     <Copyright>Copyright Signature-Code 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
     <RepositoryType>git</RepositoryType>
     <!--Removes annoying Pack warning: The package version ... uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients...-->
@@ -23,9 +24,7 @@
   <!--<ReproducibleBuilds>: See http://blog.paranoidcoding.com/2016/04/05/deterministic-builds-in-roslyn.html.-->
   <PropertyGroup Condition=" '$(CakeBuild)' == 'true' ">
     <Deterministic>true</Deterministic>
-    <!-- Finds the CK-World.htm that must exist at the root of the development directory. This is path to map to C:\CK-World. -->
-    <CKWorldPath>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CK-World.htm))</CKWorldPath>
-    <PathMap Condition=" '$(CKWorldPath)' != '' ">$(CKWorldPath)=C:\CK-World</PathMap>
+    <PathMap>$(SolutionDir)=C:\CKli-World\Kuinox-Projects\ChartsNite</PathMap>
   </PropertyGroup>
   <!--</ReproducibleBuilds>-->
 
