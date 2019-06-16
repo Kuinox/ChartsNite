@@ -9,18 +9,18 @@ namespace Common.StreamHelpers
 {
     public class BitReader
     {
-        byte[] _data;
+        Memory<byte> _data;
         byte _lastByteTruncatedBits;//TODO: throw exception if i readed too much bits.
-        public BitReader( byte[] data )
+        public BitReader( Memory<byte> data )
         {
             _data = data;
             _lastByteTruncatedBits = 0;
+
         }
         public bool this[long i] => ((
-            _data[i / 8]//We select the correct byte
-            >> (byte)(7 - (i % 8)))//we shift to left to get the correct bit.
-            & 1) == 1;//select the byte at the left and convert it to a bool
-
+            _data.Span[(int)(i / 8)]    //We select the correct byte
+            >> (byte)(7 - (i % 8)))  //we shift to left to get the correct bit.
+            & 1) == 1;               //select the byte at the left and convert it to a bool
 
         /// <summary>
         /// Read a bit, and move the cursor forward
@@ -37,6 +37,14 @@ namespace Common.StreamHelpers
             BitPosition++;
             return result;
         }
+
+        public byte[] ReadBits( long amount )
+        {
+            var output = ReadBytesAt( BitPosition, (int)((amount + 7) / 8) );
+            BitPosition += amount;
+            return output;
+        }
+
         /// <summary>
         /// Check if the position is in the <see cref="_data"/> and not in the truncated area
         /// </summary>
@@ -108,9 +116,9 @@ namespace Common.StreamHelpers
                 byte positionBitLevel = (byte)(position % 8);
                 if( positionBitLevel == 0 )
                 {
-                    return _data[positionByteLevel];
+                    return _data.Span[positionByteLevel];
                 }
-                return (byte)((byte)(_data[positionByteLevel] << positionBitLevel) | (byte)(_data[positionByteLevel + 1] >> (8 - positionBitLevel)));
+                return (byte)((byte)(_data.Span[positionByteLevel] << positionBitLevel) | (byte)(_data.Span[positionByteLevel + 1] >> (8 - positionBitLevel)));
             }
         }
 
@@ -125,9 +133,11 @@ namespace Common.StreamHelpers
             BitPosition += count * 8;
             return output;
         }
-
+        public ushort ReadUInt16() => BinaryPrimitives.ReadUInt16LittleEndian( ReadBytes( 2 ) );
         public uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian( ReadBytes( 4 ) );
-
+        public int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian( ReadBytes( 4 ) );
+        public long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian( ReadBytes( 8 ) );
+        public float ReadSingle() => BitConverter.ToSingle( ReadBytes( 4 ), 0 );
         /// <summary>
         /// Read multiple bytes and advance the cursor of 8 per bytes read
         /// </summary>
@@ -139,19 +149,20 @@ namespace Common.StreamHelpers
             int positionStart = (int)(position / 8);
             try
             {
-                if( leftShift == 0 ) return _data[positionStart..positionStart + count];
-            } catch(ArgumentException)
+                if( leftShift == 0 ) return _data[positionStart..positionStart + count].ToArray();
+            }
+            catch( ArgumentException )
             {
                 throw new IndexOutOfRangeException();
             }
 
             byte[] output = new byte[count];
-            byte nextByte = _data[positionStart];
+            byte nextByte = _data.Span[positionStart];
             byte rightShift = (byte)(8 - leftShift);
             for( int i = 0; i < count; i++ )
             {
                 byte currentByte = nextByte;
-                nextByte = _data[positionStart + i];
+                nextByte = _data.Span[positionStart + i];
                 unchecked
                 {
                     output[i] = (byte)((currentByte << leftShift) | (nextByte >> rightShift));
@@ -160,13 +171,13 @@ namespace Common.StreamHelpers
             return output;
         }
 
-        public uint ReadSerialisedInt( int maxValue)
+        public uint ReadSerialisedInt( int maxValue )
         {
             uint value = 0;
             long localPos = BitPosition;
-            for( uint mask = 1; (value+mask) < maxValue; mask *= 2, localPos++ )
+            for( uint mask = 1; (value + mask) < maxValue; mask *= 2, localPos++ )
             {
-                if ((_data[localPos >> 3 ] & (1<< (int)( localPos & 7))) > 0)
+                if( (_data.Span[(int)(localPos >> 3)] & (1 << (int)(localPos & 7))) > 0 )
                 {
                     value |= mask;
                 }
@@ -178,19 +189,19 @@ namespace Common.StreamHelpers
         public uint ReadIntPacked()//TODO: it don't work
         {
             int shiftCount = 0;
-            uint src = (uint)(BitPosition >> 3);
+            int src = (int)(BitPosition >> 3);
             byte bitcountUsedInByte = (byte)(BitPosition & 7);
             byte bitcountLeftInByte = (byte)(8 - bitcountUsedInByte);
             byte srcMaskByte0 = (byte)((1u << bitcountLeftInByte) - 1);
             byte srcMaskByte1 = (byte)((1u << bitcountUsedInByte) - 1);
             uint value = 0;
-            uint nextSrcIndex = bitcountUsedInByte != 0 ? 1u : 0;
+            int nextSrcIndex = bitcountUsedInByte != 0 ? 1 : 0;
             for( uint i = 0; i < 5; ++i, shiftCount += 7 )
             {
                 BitPosition += 8;
                 unchecked
                 {
-                    byte aByte = (byte)(((_data[src] >> bitcountUsedInByte) & srcMaskByte0) | ((_data[src + nextSrcIndex] & srcMaskByte1) << (bitcountUsedInByte & 7)));
+                    byte aByte = (byte)(((_data.Span[src] >> bitcountUsedInByte) & srcMaskByte0) | ((_data.Span[src + nextSrcIndex] & srcMaskByte1) << (bitcountUsedInByte & 7)));
                     bool nextByteIndicator = (aByte & 1) > 0;
                     uint byteAsWord = (byte)(aByte >> 1);
                     value = (byteAsWord << shiftCount) | value;
@@ -220,9 +231,7 @@ namespace Common.StreamHelpers
             }
             if( byteCountToRemove > 0 )
             {
-                byte[] newData = new byte[_data.Length - byteCountToRemove];
-                Array.Copy( _data, 0, newData, 0, newData.Length );
-                _data = newData;
+                _data = _data.Slice( 0, (int)(_data.Length - byteCountToRemove) );
             }
         }
 
@@ -230,18 +239,35 @@ namespace Common.StreamHelpers
         {
             long byteToShift = count / 8;
             byte[] newData = new byte[_data.Length];
-            Array.Copy( _data, byteToShift, newData, 0, _data.Length - byteToShift );
+            byte[] oldData = _data.ToArray();
+            Array.Copy( oldData, byteToShift, newData, 0, _data.Length - byteToShift );
+            _data = oldData;
             _data = newData;
             byte bitToShift = (byte)(count % 8);
             for( int i = 0; i + 1 < _data.Length; i++ )
             {
-                _data[i] <<= bitToShift;
-                _data[i] |= (byte)(_data[i + 1] >> (8 - bitToShift));
+                _data.Span[i] <<= bitToShift;
+                _data.Span[i] |= (byte)(_data.Span[i + 1] >> (8 - bitToShift));
             }
-            _data[^1] <<= bitToShift;
+            _data.Span[^1] <<= bitToShift;
         }
 
-
+        public uint ReadUInt32( uint max )
+        {
+            uint value = 0;
+            for( uint mask = 1; (value + mask) < max && mask > 0; mask *= 2, BitPosition++ )
+            {
+                if( BitPosition >= BitCount )
+                {
+                    throw new EndOfStreamException();
+                }
+                if( (_data.Span[(int)(BitPosition >> 3)] & (1 << ((int)(BitPosition & 7)))) > 0 )
+                {
+                    value |= mask;
+                }
+            }
+            return value;
+        }
         public void TruncateStart( long amount )
         {
             ShiftLeft( amount );
@@ -249,7 +275,8 @@ namespace Common.StreamHelpers
         }
 
         public long BitPosition { get; set; }
-
+        public int BytePosition => (int)(BitPosition / 8);
+        public int ByteCount => _data.Length;
         public long BitCount => 8 * _data.Length - _lastByteTruncatedBits;
 
         public bool AtEnd => BitCount == BitPosition;

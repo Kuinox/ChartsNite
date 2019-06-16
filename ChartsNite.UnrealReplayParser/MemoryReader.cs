@@ -4,7 +4,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnrealReplayParser.UnrealObject;
-using UnrealReplayParser.UnrealObject.Types;
 using static System.Buffers.Binary.BinaryPrimitives;
 using static UnrealReplayParser.DemoHeader;
 
@@ -15,7 +14,7 @@ public enum Endianness
     Big
 }
 
-public class MemoryReader
+class MemoryReader
 {
     readonly Memory<byte> _baseMemory;
 
@@ -311,143 +310,11 @@ public class MemoryReader
     }
 
 
-
-
-    /// <summary>
-    /// In UnrealEngine source code: void FArchive::SerializeIntPacked( uint32& Value )
-    /// </summary>
-    /// <returns></returns>
-    [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public uint ReadIntPacked()
-    {
-        uint value = 0;
-        byte count = 0;
-        bool more = true;
-
-        while( more )
-        {
-            byte nextByte = ReadOneByte();
-            more = (nextByte & 1) == 1;         // Check 1 bit to see if theres more after this
-            nextByte >>= 1;           // Shift to get actual 7 bit value
-            value += (uint)nextByte << (7 * count++); // Add to total value
-        }
-        return value;
-    }
-
-    public StaticName ReadStaticName( EngineNetworkVersionHistory versionHistory )
-    {
-        byte b = ReadOneByte();
-        bool hardcoded = b != 0;
-        if( hardcoded )
-        {
-            if( versionHistory < EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
-            {
-                return new StaticName( ReadUInt32(), "", true );
-            }
-            else
-            {
-                return new StaticName( ReadIntPacked(), "", true );
-            }
-            //hard coded names in "UnrealNames.inl"
-        }
-        else
-        {
-            string inString = ReadString();
-            int inNumber = ReadInt32();
-            return new StaticName( (uint)inNumber, inString, false );
-        }
-    }
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
     public byte ReadOneByte()
     {
         byte output = _baseMemory.Span[Offset];
         Offset++;
         return output;
-    }
-
-    [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public string ReadString()
-    {
-        int length = ReadInt32();
-        if( length == -2147483648 )//if we reverse this, it overflow
-        {
-            throw new InvalidDataException( "The size of the string has an invalid value" );
-        }
-        if( length == 0 )
-        {
-            return "";
-        }
-        bool isUnicode = length < 0;
-        string value;
-        if( isUnicode )
-        {
-            length = -length;
-            
-            value = Encoding.Unicode.GetString( ReadBytes( length * 2 - 2 ).Span );
-            Offset += 2;
-        }
-        else
-        {
-            value = Encoding.ASCII.GetString( ReadBytes( length - 1 ).Span );
-            Offset += 1;
-        }
-        return value;
-    }
-
-    public T[] ReadSparseArray<T>( Func<T> baseTypeParser )
-    {
-        int newNumElement = ReadInt32();
-        Debug.Assert( newNumElement >= 0 );
-        T[] output = new T[newNumElement];
-        for( int i = 0; i < newNumElement; i++ )
-        {
-            output[i] = baseTypeParser();
-        }
-        return output;
-    }
-
-    public T[] ReadArray<T>( Func<T> baseTypeParser )
-    {
-        int length = ReadInt32();
-        Debug.Assert( length >= 0 );
-        T[] output = new T[length];
-        for( int i = 0; i < length; i++ )
-        {
-            output[i] = baseTypeParser();
-        }
-        return output;
-    }
-    public NetFieldExport ReadNetFieldExport( EngineNetworkVersionHistory versionHistory )
-    {
-        byte flags = ReadOneByte();
-        bool exported = 1 == flags;
-        if( !exported )
-        {
-            return NetFieldExport.InitializeNotExported();
-        }
-        uint handle = ReadIntPacked();
-        uint compatibleChecksum = ReadUInt32();
-
-        string name;
-        string type;
-        if( versionHistory < EngineNetworkVersionHistory.HISTORY_NETEXPORT_SERIALIZATION )
-        {
-            name = ReadString();
-            type = ReadString();
-        }
-        else
-        {
-            if( versionHistory < EngineNetworkVersionHistory.HISTORY_NETEXPORT_SERIALIZE_FIX )
-            {
-                throw new NotImplementedException();
-            }
-            else
-            {
-                var staticName = ReadStaticName( versionHistory );
-                name = staticName.Name;
-                type = "";
-            }
-        }
-        return NetFieldExport.InitializeExported( handle, compatibleChecksum, name, type );
     }
 }

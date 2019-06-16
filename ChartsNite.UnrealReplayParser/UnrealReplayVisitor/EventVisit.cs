@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ChartsNite.UnrealReplayParser;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 
@@ -17,15 +19,15 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseEventHeader( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseEventHeader( ReplayArchiveAsync ar )
         {
-            string id = await binaryReader.ReadStringAsync();
-            string group = await binaryReader.ReadStringAsync();
-            string metadata = await binaryReader.ReadStringAsync();
-            uint time1 = await binaryReader.ReadUInt32Async();
-            uint time2 = await binaryReader.ReadUInt32Async();
-            int eventSizeInBytes = await binaryReader.ReadInt32Async();
-            return await ChooseEventChunkType( binaryReader, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ) );
+            string id = await ar.ReadStringAsync();
+            string group = await ar.ReadStringAsync();
+            string metadata = await ar.ReadStringAsync();
+            uint time1 = await ar.ReadUInt32Async();
+            uint time2 = await ar.ReadUInt32Async();
+            int eventSizeInBytes = await ar.ReadInt32Async();
+            return await ChooseEventChunkType( ar, new EventOrCheckpointInfo( id, group, metadata, time1, time2 ) );
         }
         public virtual ValueTask<bool> ErrorOnParseEventHeader()
         {
@@ -36,7 +38,7 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="eventInfo"></param>
         /// <returns>always <see langword="true"/></returns>
-        public virtual ValueTask<bool> ChooseEventChunkType( CustomBinaryReaderAsync binaryReader, EventOrCheckpointInfo eventInfo )
+        public virtual ValueTask<bool> ChooseEventChunkType( ReplayArchiveAsync ar, EventOrCheckpointInfo eventInfo )
         {
             return new ValueTask<bool>(true);
         }

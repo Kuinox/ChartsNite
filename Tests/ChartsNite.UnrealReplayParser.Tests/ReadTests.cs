@@ -10,6 +10,7 @@ using FortniteReplayParser;
 using System.Linq;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 
 namespace UnrealReplayParser.Tests
 {
@@ -40,7 +41,7 @@ namespace UnrealReplayParser.Tests
             {
                 (await unrealVisitor.Visit()).Should().Be(true);
                 await unrealVisitor.DidNotReceiveWithAnyArgs().ErrorOnChunkContentParsingAsync();
-                await unrealVisitor.ReceivedWithAnyArgs().ParseGameSpecificHeaderChunk(Arg.Any<CustomBinaryReaderAsync>());
+                await unrealVisitor.ReceivedWithAnyArgs().ParseGameSpecificHeaderChunk(Arg.Any<ReplayArchiveAsync>());
             }
         }
 

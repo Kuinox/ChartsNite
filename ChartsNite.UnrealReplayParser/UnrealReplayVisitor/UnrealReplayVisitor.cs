@@ -5,6 +5,8 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ChartsNite.UnrealReplayParser;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
@@ -34,7 +36,7 @@ namespace UnrealReplayParser
             {
                 ChunkHeader chunkHeader = await ParseChunkHeader();
                 await using( SubStream stream = SubStreamFactory.CreateSubstream( chunkHeader.ChunkSize ) )
-                using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( stream, true ) )
+                using( ReplayArchiveAsync binaryReader = new ReplayArchiveAsync( stream, DemoHeader!.EngineNetworkProtocolVersion, ReplayHeader!.Compressed , true ) )
                 {
                     if( chunkHeader.ChunkType == ChunkType.EndOfStream )
                     {
@@ -73,7 +75,7 @@ namespace UnrealReplayParser
             int chunkSize;
             ChunkType chunkType;
             await using( SubStream chunkHeader = SubStreamFactory.CreateSubstream( 8 ) )
-            await using( CustomBinaryReaderAsync customReader = new CustomBinaryReaderAsync( chunkHeader, true ) )
+            await using( ReplayArchiveAsync customReader = new ReplayArchiveAsync( chunkHeader, 0, false, true ) )
             {
                 try //TODO add case when you can seek.
                 {
@@ -100,7 +102,7 @@ namespace UnrealReplayParser
         /// <param name="replayInfo"></param>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async ValueTask<bool> ChooseChunkType( CustomBinaryReaderAsync binaryReader, ChunkType chunkType )
+        public virtual async ValueTask<bool> ChooseChunkType( ReplayArchiveAsync binaryReader, ChunkType chunkType )
         {
             return (chunkType switch
             {

@@ -8,18 +8,20 @@ namespace Tests
 {
     public class BitReaderTest
     {
-        static readonly bool[] _truthTableBits = new bool[] {
+        static bool[] TruthTableBits() => new bool[] {
                 true, false, true, false, true, true, false, true,
                 true, true, true, true, true, true, true, false,
                 true, false, false, false, false, false, true, false };
-        static readonly byte[] _truthTableByte = new byte[] { 173, 254, 130 };
+        static byte[] TruthTableByte() => new byte[] { 173, 254, 130 };
         [Test]
         public void ReadBitsCorrectly()
         {
-            BitReader reader = new BitReader( _truthTableByte );
-            for( int i = 0; i < _truthTableBits.Length; i++ )
+            byte[] truthTable = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTable );
+            for( int i = 0; i < truthTableBits.Length; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBit() );
         }
@@ -27,29 +29,34 @@ namespace Tests
         [Test]
         public void ReadBytesCorrectly()
         {
-            BitReader reader = new BitReader( _truthTableByte );
-            reader.ReadBytes( _truthTableByte.Length ).Should().BeEquivalentTo( _truthTableByte );
+            byte[] truthTable = TruthTableByte();
+            BitReader reader = new BitReader( truthTable );
+            reader.ReadBytes( truthTable.Length ).Should().BeEquivalentTo( truthTable );
         }
         [Test]
         public void ReadMixedCorrectly()
         {
-            BitReader reader = new BitReader( _truthTableByte );
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
             reader.ReadBit().Should().Be( true );
             reader.ReadOneByte().Should().Be( 91 );
-            for( int i = 9; i < _truthTableBits.Length; i++ )
+            for( int i = 9; i < truthTableBits.Length; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
         }
 
         [Test]
         public void ShiftLeft()
         {
-            BitReader reader = new BitReader( _truthTableByte );
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
             reader.ShiftLeft( 1 );
-            for( int i = 1; i < _truthTableBits.Length; i++ )
+            for( int i = 1; i < truthTableBits.Length; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             reader.ReadBit().Should().BeFalse();
         }
@@ -57,27 +64,31 @@ namespace Tests
         [Test]
         public void ReadOutOfRangeShouldThrow()
         {
-            BitReader reader = new BitReader( _truthTableByte );
-            for( int i = 0; i < _truthTableBits.Length; i++ )
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
+            for( int i = 0; i < truthTableBits.Length; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBit() );
-            BitReader reader2 = new BitReader( _truthTableByte );
-            for( int i = 0; i < _truthTableBits.Length - 3; i++ )
+            BitReader reader2 = new BitReader( truthTableByte );
+            for( int i = 0; i < truthTableBits.Length - 3; i++ )
             {
-                reader2.ReadBit().Should().Be( _truthTableBits[i] );
+                reader2.ReadBit().Should().Be( truthTableBits[i] );
             }
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBytes( 1 ) );
         }
         [Test]
         public void TruncateStart()
         {
-            BitReader reader = new BitReader( _truthTableByte );
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
             reader.TruncateStart( 11 );
-            for( int i = 11; i < _truthTableBits.Length; i++ )
+            for( int i = 11; i < truthTableBits.Length; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBit() );
         }
@@ -85,11 +96,13 @@ namespace Tests
         [Test]
         public void TruncateEnd()
         {
-            BitReader reader = new BitReader( _truthTableByte );
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
             reader.TruncateEnd( 9 );
-            for( int i = 0; i < _truthTableBits.Length - 9; i++ )
+            for( int i = 0; i < truthTableBits.Length - 9; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBit() );
         }
@@ -104,24 +117,27 @@ namespace Tests
         [Test]
         public void RemoveTrailingZeros()
         {
-            BitReader reader = new BitReader( _truthTableByte );
+            byte[] truthTableByte = TruthTableByte();
+            bool[] truthTableBits = TruthTableBits();
+            BitReader reader = new BitReader( truthTableByte );
             reader.RemoveTrailingZeros();
             int i;
-            for( i = 0; i < _truthTableBits.Length-1; i++ )
+            for( i = 0; i < truthTableBits.Length-1; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
-            i.Should().Be( _truthTableBits.Length - 1 );
+            i.Should().Be( truthTableBits.Length - 1 );
         }
 
         [Test]
         public void RemoveTrailingZerosDoesNotTruncateWhereThereIsNoTrailingZero()
         {
+            bool[] truthTableBits = TruthTableBits();
             byte[] truthTable = new byte[] { 173, 254, 131 };
             BitReader reader = new BitReader( truthTable );
-            for( int i = 0; i < _truthTableBits.Length-1; i++ )
+            for( int i = 0; i < truthTableBits.Length-1; i++ )
             {
-                reader.ReadBit().Should().Be( _truthTableBits[i] );
+                reader.ReadBit().Should().Be( truthTableBits[i] );
             }
             reader.ReadBit().Should().BeTrue();
             Assert.Throws<IndexOutOfRangeException>( () => reader.ReadBit() );

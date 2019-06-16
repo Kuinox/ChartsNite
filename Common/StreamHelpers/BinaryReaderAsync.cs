@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public class BinaryReaderAsync : IDisposable
+    public class BinaryReaderAsync : IDisposable, IAsyncDisposable
     {
         readonly Stream _stream;
         readonly Memory<byte> _buffer;
@@ -207,6 +207,18 @@ namespace System.IO
                 if( n == 0 ) throw new EndOfStreamException();
                 bytesRead += n;
             } while( bytesRead < numBytes );
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if( !_disposed )
+            {
+                if( !_leaveOpen )
+                {
+                    await _stream.DisposeAsync();
+                }
+                _disposed = true;
+            }
         }
     }
 }

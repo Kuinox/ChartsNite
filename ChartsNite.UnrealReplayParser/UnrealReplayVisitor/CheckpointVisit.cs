@@ -5,6 +5,8 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ChartsNite.UnrealReplayParser;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
@@ -20,7 +22,7 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseCheckpointHeader( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseCheckpointHeader( ReplayArchiveAsync binaryReader )
         {
             string id = await binaryReader.ReadStringAsync();
             string group = await binaryReader.ReadStringAsync();
@@ -30,34 +32,35 @@ namespace UnrealReplayParser
             int eventSizeInBytes = await binaryReader.ReadInt32Async();
             using( IMemoryOwner<byte> uncompressed = await binaryReader.UncompressData() )
             {
-                
-                return ParseCheckpointContent( new MemoryReader( uncompressed.Memory, Endianness.Native ), id, group, metadata, time1, time2 );
+
+                //return ParseCheckpointContent( new ChunkArchive( uncompressed.Memory, DemoHeader!.EngineNetworkProtocolVersion ), id, group, metadata, time1, time2 );
+                return true;
             }
             
         }
 
-        public virtual bool ParseCheckpointContent(MemoryReader reader, string id, string group, string metadata, uint time1, uint time2 )
+        public virtual bool ParseCheckpointContent( ChunkArchive ar, string id, string group, string metadata, uint time1, uint time2 )
         {
-            long packetOffset = reader.ReadInt64();
-            int levelForCheckpoint = reader.ReadInt32();
+            long packetOffset = ar.ReadInt64();
+            int levelForCheckpoint = ar.ReadInt32();
 
-            string[] deletedNetStartupActors = reader.ReadSparseArray( reader.ReadString );
-            int valuesCount = reader.ReadInt32();
+            string[] deletedNetStartupActors = ar.ReadArray( ar.ReadString );
+            int valuesCount = ar.ReadInt32();
             for( int i = 0; i < valuesCount; i++ )
             {
-                uint guid = reader.ReadIntPacked();
-                uint outerGuid = reader.ReadIntPacked();
-                string path = reader.ReadString();
-                uint checksum = reader.ReadUInt32();
-                byte flags = reader.ReadOneByte();
+                uint guid = ar.ReadIntPacked();
+                uint outerGuid = ar.ReadIntPacked();
+                string path = ar.ReadString();
+                uint checksum = ar.ReadUInt32();
+                byte flags = ar.ReadByte();
             }
-            NetFieldExportGroupMap( reader );
-            ParsePlaybackPacket( reader );
+            NetFieldExportGroupMap( ar );
+            ParsePlaybackPacket( ar );
            // File.WriteAllBytes( "dump.dump", binaryReader.DumpRemainingBytes() );
             return true;
         }
 
-        public virtual bool NetFieldExportGroupMap( MemoryReader binaryReader )
+        public virtual bool NetFieldExportGroupMap( ChunkArchive binaryReader )
         {
             uint numNetFieldExportGroups = binaryReader.ReadUInt32();
             for( int i = 0; i < numNetFieldExportGroups; i++ )
@@ -67,14 +70,14 @@ namespace UnrealReplayParser
             return true;
         }
 
-        public virtual bool ParseNetFieldExportGroup( MemoryReader binaryReader )
+        public virtual bool ParseNetFieldExportGroup( ChunkArchive ar )
         {
-            string a = binaryReader.ReadString();
-            uint packedInt = binaryReader.ReadIntPacked();
-            uint count = binaryReader.ReadIntPacked();
+            string a = ar.ReadString();
+            uint packedInt = ar.ReadIntPacked();
+            uint count = ar.ReadIntPacked();
             for( int i = 0; i < count; i++ )
             {
-                binaryReader.ReadNetFieldExport( DemoHeader!.EngineNetworkProtocolVersion );
+                ar.ReadNetFieldExport();
             }
             return true;
         }

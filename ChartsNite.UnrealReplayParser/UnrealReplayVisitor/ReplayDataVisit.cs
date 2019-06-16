@@ -5,6 +5,8 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ChartsNite.UnrealReplayParser;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
@@ -21,7 +23,7 @@ namespace UnrealReplayParser
     /// </summary>
     public partial class UnrealReplayVisitor : IDisposable
     {
-        public virtual async ValueTask<bool> ParseReplayDataChunkHeader( CustomBinaryReaderAsync chunkReader )
+        public virtual async ValueTask<bool> ParseReplayDataChunkHeader( ReplayArchiveAsync chunkReader )
         {
             uint time1 = uint.MaxValue;
             uint time2 = uint.MaxValue;
@@ -34,12 +36,12 @@ namespace UnrealReplayParser
             using( IMemoryOwner<byte> uncompressedData = await chunkReader.UncompressData() )//TODO: check compress
             {
                 //return ParseReplayData( new MemoryReader( uncompressedData.Memory, Endianness.Native ));
+                return true;
             }
-            return true;
 
         }
 
-        public virtual bool ParseReplayData( MemoryReader streamReader )
+        public virtual bool ParseReplayData( ChunkArchive streamReader )
         {
             while( streamReader.Length > streamReader.Offset )
             {

@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ChartsNite.UnrealReplayParser;
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
@@ -29,20 +31,17 @@ namespace UnrealReplayParser
 
         public virtual async ValueTask<bool> ParseReplayInfo()
         {
-            using( CustomBinaryReaderAsync binaryReader = new CustomBinaryReaderAsync( SubStreamFactory.BaseStream, true ) )
-            {
-                if( !await ParseReplayHeader( binaryReader ) ) return false;
-                ChunkHeader chunkHeader = await ParseChunkHeader();
-                if( chunkHeader.ChunkType != ChunkType.Header ) return false;
-                await using( SubStream stream = SubStreamFactory.CreateSubstream( chunkHeader.ChunkSize ) )
-                using( CustomBinaryReaderAsync chunkReader = new CustomBinaryReaderAsync( stream, true ) )
-                {
-                    return await ParseGameSpecificHeaderChunk( chunkReader );
-                }
-            }
+            using ReplayArchiveAsync ar = new ReplayArchiveAsync( SubStreamFactory.BaseStream, 0, compressed: false, leaveOpen: true );
+            if( !await ParseReplayHeader( ar ) ) return false;
+            ChunkHeader chunkHeader = await ParseChunkHeader();
+            if( chunkHeader.ChunkType != ChunkType.Header ) return false;
+            await using SubStream stream = SubStreamFactory.CreateSubstream( chunkHeader.ChunkSize );
+            using ReplayArchiveAsync chunkReader = new ReplayArchiveAsync( stream, 0/*We are parsing the chunk and don't know the version yet.*/, false, true );
+
+            return await ParseGameSpecificHeaderChunk( chunkReader );
         }
 
-        public virtual async ValueTask<bool> ParseReplayHeader( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseReplayHeader( ReplayArchiveAsync binaryReader )
         {
             if( !await ParseMagicNumber( binaryReader ) )
             {
@@ -81,7 +80,7 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="binaryReader"></param>
         /// <returns></returns>
-        public virtual async ValueTask<bool> ParseMagicNumber( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseMagicNumber( ReplayArchiveAsync binaryReader )
         {
             return await VisitMagicNumber( await binaryReader.ReadUInt32Async() );
         }
@@ -102,7 +101,7 @@ namespace UnrealReplayParser
         /// </summary>
         /// <param name="chunk"></param>
         /// <returns></returns>
-        public virtual async ValueTask<bool> ParseGameSpecificHeaderChunk( CustomBinaryReaderAsync binaryReader )
+        public virtual async ValueTask<bool> ParseGameSpecificHeaderChunk( ReplayArchiveAsync binaryReader )
         {
             if( await binaryReader.ReadUInt32Async() != DemoHeaderMagic ) return false;
             NetworkVersionHistory version = (NetworkVersionHistory)await binaryReader.ReadUInt32Async();

@@ -1,9 +1,11 @@
+using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnrealReplayParser.Chunk;
+using UnrealReplayParser.UnrealObject;
 
 namespace UnrealReplayParser
 {
@@ -14,7 +16,7 @@ namespace UnrealReplayParser
         {
             return (DemoHeader!.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) >= 0;
         }
-        public virtual int ParsePacket( MemoryReader reader )
+        public virtual int ParsePacket( ChunkArchive reader )
         {
             const int MaxBufferSize = 2 * 1024;
             int outBufferSize = reader.ReadInt32();
@@ -24,7 +26,7 @@ namespace UnrealReplayParser
             }
             if( outBufferSize == 0 ) return outBufferSize;
             var outBuffer = reader.ReadBytes( outBufferSize );
-            ProcessRawPacket( new BitReader( outBuffer.Span.ToArray() ) ); //TODO avoid array alloc
+            ProcessRawPacket( new BitReader( outBuffer.ToArray() ) ); //TODO avoid array alloc
             return outBufferSize;
         }
         /// <summary>
@@ -34,7 +36,7 @@ namespace UnrealReplayParser
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns></returns>
-        public virtual bool ParsePlaybackPacket( MemoryReader reader )
+        public virtual bool ParsePlaybackPacket( ChunkArchive reader )
         {
             bool appendPacket = true;
             bool hasLevelStreamingFixes = true;//TODO: this method
@@ -83,14 +85,14 @@ namespace UnrealReplayParser
             return true;
         }
 
-        public virtual bool ParseExternalData( MemoryReader reader )
+        public virtual bool ParseExternalData( ChunkArchive reader )
         {
             while( true )
             {
                 uint externalDataBitsCount = reader.ReadIntPacked();
                 if( externalDataBitsCount == 0 ) return true;
                 uint netGuid = reader.ReadIntPacked();
-                reader.Offset += (int)(externalDataBitsCount + 7) >> 3;//TODO: We dont do anything with it yet. We burn byte now.
+               reader.ReadBytes((int)(externalDataBitsCount + 7) >> 3);//TODO: We dont do anything with it yet. We burn byte now.
             }
         }
         public virtual bool ProcessRawPacket( BitReader reader )
@@ -224,21 +226,21 @@ namespace UnrealReplayParser
         const uint SequenceNumberBits = 14;
         const uint MaxSequenceHistoryLength = 256;
         #region ExportData
-        public virtual bool ParseExportData( MemoryReader reader )
+        public virtual bool ParseExportData( ChunkArchive reader )
         {
             return ParseNetFieldExports( reader )
                 && ParseNetExportGUIDs( reader );
         }
-        public virtual bool ParseNetExportGUIDs( MemoryReader reader )
+        public virtual bool ParseNetExportGUIDs( ChunkArchive reader )
         {
             uint guidCount = reader.ReadIntPacked();
             for( int i = 0; i < guidCount; i++ )
             {
-                reader.Offset = reader.ReadInt32() + reader.Offset;
+                reader.ReadBytes( reader.ReadInt32() );//burn.
             }
             return true;
         }
-        public virtual bool ParseNetFieldExports( MemoryReader reader )
+        public virtual bool ParseNetFieldExports( ChunkArchive reader )
         {
             uint exportCount = reader.ReadIntPacked();
             for( int i = 0; i < exportCount; i++ )
@@ -254,7 +256,7 @@ namespace UnrealReplayParser
                 {
                     //We does nothing here but Unreal does something
                 }
-                var netExports = reader.ReadNetFieldExport( DemoHeader!.EngineNetworkProtocolVersion );
+                var netExports = reader.ReadNetFieldExport();
             }
             return true;
         }
