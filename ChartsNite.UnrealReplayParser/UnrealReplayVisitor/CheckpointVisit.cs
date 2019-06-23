@@ -10,6 +10,7 @@ using ChartsNite.UnrealReplayParser.StreamArchive;
 using Common.StreamHelpers;
 using UnrealReplayParser.Chunk;
 using UnrealReplayParser.UnrealObject;
+using static UnrealReplayParser.DemoHeader;
 
 namespace UnrealReplayParser
 {
@@ -32,19 +33,27 @@ namespace UnrealReplayParser
             int eventSizeInBytes = await binaryReader.ReadInt32Async();
             using( IMemoryOwner<byte> uncompressed = await binaryReader.UncompressData() )
             {
-
-                //return ParseCheckpointContent( new ChunkArchive( uncompressed.Memory, DemoHeader!.EngineNetworkProtocolVersion ), id, group, metadata, time1, time2 );
+                return ParseCheckpointContent( new ChunkArchive( uncompressed.Memory, DemoHeader!.EngineNetworkProtocolVersion ), id, group, metadata, time1, time2 );
                 return true;
             }
-            
         }
 
         public virtual bool ParseCheckpointContent( ChunkArchive ar, string id, string group, string metadata, uint time1, uint time2 )
         {
-            long packetOffset = ar.ReadInt64();
-            int levelForCheckpoint = ar.ReadInt32();
+            if( (DemoHeader!.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) > 0 )
+            {
+                long packetOffset = ar.ReadInt64();
+            }
+            if(DemoHeader!.NetworkVersion >= NetworkVersionHistory.multipleLevels)
+            {
+                int levelForCheckpoint = ar.ReadInt32();
+            }
 
-            string[] deletedNetStartupActors = ar.ReadArray( ar.ReadString );
+            if(DemoHeader!.NetworkVersion >= NetworkVersionHistory.deletedStartupActors)
+            {
+                string[] deletedNetStartupActors = ar.ReadArray( ar.ReadString );
+            }
+
             int valuesCount = ar.ReadInt32();
             for( int i = 0; i < valuesCount; i++ )
             {
@@ -56,7 +65,7 @@ namespace UnrealReplayParser
             }
             NetFieldExportGroupMap( ar );
             ParsePlaybackPacket( ar );
-           // File.WriteAllBytes( "dump.dump", binaryReader.DumpRemainingBytes() );
+            // File.WriteAllBytes( "dump.dump", binaryReader.DumpRemainingBytes() );
             return true;
         }
 

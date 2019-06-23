@@ -55,16 +55,12 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
             if( isUnicode )
             {
                 length = -length;
-
-                return Encoding.Unicode.GetString( ReadBytes( length * 2 - 2 ) );
+                return Encoding.Unicode.GetString( ReadBytes( length * 2 )[0..Index.FromEnd( 1 )] );
             }
-            else
-            {
-                return Encoding.ASCII.GetString( ReadBytes( length - 1 ) );
-            }
+            return Encoding.ASCII.GetString( ReadBytes( length )[0..Index.FromEnd( 1 )] );
         }
 
-        public T[] ReadArray<T> (Func<T> baseTypeParser)
+        public T[] ReadArray<T>( Func<T> baseTypeParser )
         {
             int length = ReadInt32();
             Debug.Assert( length >= 0 );
@@ -75,6 +71,6 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
             }
             return output;
         }
-       
+
     }
 }

@@ -55,17 +55,12 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
                 return "";
             }
             bool isUnicode = length < 0;
-            string value;
             if( isUnicode )
             {
                 length = -length;
-                value = Encoding.Unicode.GetString( (await ReadBytesAsync( length * 2 ))[0..Index.FromEnd( 2 )].Span );
+                return Encoding.Unicode.GetString( (await ReadBytesAsync( length * 2 ))[0..Index.FromEnd( 1 )].Span );
             }
-            else
-            {
-                value = Encoding.ASCII.GetString( (await ReadBytesAsync( length ))[0..Index.FromEnd( 1 )].Span );
-            }
-            return value;
+            return Encoding.ASCII.GetString( (await ReadBytesAsync( length ))[0..Index.FromEnd( 1 )].Span );
         }
 
         public async ValueTask<T[]> ReadArrayAsync<T>( Func<ValueTask<T>> baseTypeParser )

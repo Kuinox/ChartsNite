@@ -25,7 +25,7 @@ namespace UnrealReplayParser.Tests
         [Test, TestCaseSource( nameof( ParserProvider ) )]
         public async Task NoExceptionWhileReading( (Type, string) tuple )
         {
-            using( Stream replayStream = /*new DebugStream(*/ File.OpenRead( tuple.Item2 )/*, DebugStream.AllowedMethods.AsyncMemory | DebugStream.AllowedMethods.MustDispose )*/ )
+            using( Stream replayStream = File.OpenRead( tuple.Item2 ) )
             using( UnrealReplayVisitor unrealVisitor = new UnrealReplayVisitor( replayStream ) )
             {
                 (await unrealVisitor.Visit()).Should().Be( true );
@@ -36,7 +36,7 @@ namespace UnrealReplayParser.Tests
         public async Task NoErrorWhileReading((Type,string) tuple)
         {
             var substituteOfType = typeof(Substitute).GetMethod(nameof(Substitute.ForPartsOf)).MakeGenericMethod(tuple.Item1);
-            using (Stream replayStream = /*new DebugStream( */File.OpenRead( tuple.Item2 )/*, DebugStream.AllowedMethods.AsyncMemory | DebugStream.AllowedMethods.MustDispose )*/ )
+            using (Stream replayStream = File.OpenRead( tuple.Item2 ) )
             using (UnrealReplayVisitor unrealVisitor = (UnrealReplayVisitor)substituteOfType.Invoke(null, new[] { new object[] { replayStream } }))
             {
                 (await unrealVisitor.Visit()).Should().Be(true);

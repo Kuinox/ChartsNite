@@ -8,10 +8,10 @@ namespace UnrealReplayParser
     {
         public DemoHeader( NetworkVersionHistory version, uint networkChecksum, EngineNetworkVersionHistory engineNetworkProtocolVersion, uint gameNetworkProtocolVerrsion, Guid guid, ushort major, ushort minor, ushort patch, uint changeList, string branch, (string, uint)[] levelNamesAndTimes, ReplayHeaderFlags headerFlags, string[] gameSpecificData )
         {
-            Version = version;
+            NetworkVersion = version;
             NetworkChecksum = networkChecksum;
             EngineNetworkProtocolVersion = engineNetworkProtocolVersion;
-            GameNetworkProtocolVerrsion = gameNetworkProtocolVerrsion;
+            GameNetworkProtocolVersion = gameNetworkProtocolVerrsion;
             Guid = guid;
             Major = major;
             Minor = minor;
@@ -23,10 +23,10 @@ namespace UnrealReplayParser
             GameSpecificData = gameSpecificData;
         }
 
-        public NetworkVersionHistory Version { get; }
+        public NetworkVersionHistory NetworkVersion { get; }
         public uint NetworkChecksum { get; }
         public EngineNetworkVersionHistory EngineNetworkProtocolVersion { get; }
-        public uint GameNetworkProtocolVerrsion { get; }
+        public uint GameNetworkProtocolVersion { get; }
         public Guid Guid { get; }
         public ushort Major { get; }
         public ushort Minor { get; }
@@ -44,7 +44,7 @@ namespace UnrealReplayParser
             increasedBuffer = 3,            // Increased buffer size of packets, which invalidates old replays
             engineVersion = 4,              // Now saving engine net version + InternalProtocolVersion
             extraVersion = 5,               // We now save engine/game protocol version, checksum, and changelist
-            multiLevels = 6,                // Replays support seamless travel between levels
+            multipleLevels = 6,                // Replays support seamless travel between levels
             multiLevelTimeChange = 7,       // Save out the time that level changes happen
             deletedStartupActors = 8,       // Save DeletedNetStartupActors inside checkpoints
             demoHeaderEnumFlags = 9,        // Save out enum flags with demo header
