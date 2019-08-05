@@ -46,7 +46,7 @@ namespace UnrealReplayParser.UnrealObject
                 string exportName = ar.ReadString();
                 return NetFieldExport.InstantiateExported( handle, checksum, exportName, "" );
             }
-            var staticName = StaticNameParsing.ReadStaticName( ar );
+            var staticName = ar.ReadStaticName();
             return NetFieldExport.InstantiateExported( handle, checksum, staticName.Name, "" );
         }
 
@@ -67,7 +67,7 @@ namespace UnrealReplayParser.UnrealObject
                 string exportName = await ar.ReadStringAsync();
                 return NetFieldExport.InstantiateExported( handle, checksum, exportName, "" );
             }
-            StaticName staticName = await StaticNameParsing.ReadStaticNameAsync( ar );
+            StaticName staticName = await ar.ReadStaticNameAsync();
             return NetFieldExport.InstantiateExported( handle, checksum, staticName.Name, "" );
         }
     }

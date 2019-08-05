@@ -35,8 +35,7 @@ namespace UnrealReplayParser
             }
             using( IMemoryOwner<byte> uncompressedData = await chunkReader.UncompressData() )//TODO: check compress
             {
-                //return ParseReplayData( new MemoryReader( uncompressedData.Memory, Endianness.Native ));
-                return true;
+                return ParseReplayData( new ChunkArchive( uncompressedData.Memory, DemoHeader!, ReplayHeader! ));
             }
 
         }
@@ -49,6 +48,7 @@ namespace UnrealReplayParser
                 {
                     return false;
                 }
+                return true;//TO REMOVE
             }
             return true;
         }

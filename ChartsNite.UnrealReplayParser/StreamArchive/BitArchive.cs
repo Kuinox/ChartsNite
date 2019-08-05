@@ -6,12 +6,13 @@ using UnrealReplayParser;
 
 namespace ChartsNite.UnrealReplayParser.StreamArchive
 {
-    class BitArchive : Archive
+    public class BitArchive : Archive
     {
         BitReader _bitReader;
-        public BitArchive( DemoHeader.EngineNetworkVersionHistory engineNetVer ) : base( engineNetVer )
+        public BitArchive(Memory<byte> data, DemoHeader demoHeader, ReplayHeader replayHeader)
+            : base(demoHeader, replayHeader)
         {
-
+            _bitReader = new BitReader( data );
         }
 
         public override int Length => _bitReader.ByteCount;
@@ -19,6 +20,15 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
         public override int Offset => _bitReader.BytePosition;
 
         public override int RemainingByte => throw new NotImplementedException();
+
+        public void RemoveTrailingZeros() => _bitReader.RemoveTrailingZeros();
+
+        public override Memory<byte> HeapReadBytes( int amount )
+        {
+            throw new NotSupportedException();
+        }
+
+        public override bool ReadBit() => _bitReader.ReadBit();
 
         public override Span<byte> ReadBits( long amount ) => _bitReader.ReadBits( amount );
 

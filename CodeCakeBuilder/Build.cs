@@ -60,19 +60,19 @@ namespace CodeCake
                     StandardSolutionBuild( globalInfo, solutionFileName );
                 } );
 
-            //Task( "Unit-Testing" )
-            //    .IsDependentOn( "Build" )
-            //    .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
-            //                         || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
-            //    .Does( () =>
-            //    {
-            //        var testProjects = projects.Where( p => p.Name.EndsWith( ".Tests" ) );
-            //        StandardUnitTests( globalInfo, testProjects );
-            //    } );
+            Task( "Unit-Testing" )
+                .IsDependentOn( "Build" )
+                .WithCriteria( () => Cake.InteractiveMode() == InteractiveMode.NoInteraction
+                                     || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
+                .Does( () =>
+                {
+                    var testProjects = projects.Where( p => p.Name.EndsWith( ".Tests" ) );
+                    StandardUnitTests( globalInfo, testProjects );
+                } );
 
             Task( "Create-NuGet-Packages" )
                 .WithCriteria( () => gitInfo.IsValid )
-                .IsDependentOn( "Build" )
+                .IsDependentOn( "Unit-Testing" )
                 .Does( () =>
                 {
                     StandardCreateNuGetPackages( globalInfo );

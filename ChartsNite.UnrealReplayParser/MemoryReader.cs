@@ -29,7 +29,7 @@ class MemoryReader
 
     public Memory<byte> ReadBytes( int length )
     {
-        Memory<byte> output = Slice[..length];
+        Memory<byte> output = Slice[0..length];
         Offset += length;
         return output;
     }

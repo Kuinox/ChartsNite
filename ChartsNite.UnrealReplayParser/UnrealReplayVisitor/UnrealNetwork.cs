@@ -1,7 +1,9 @@
 using ChartsNite.UnrealReplayParser.StreamArchive;
+using ChartsNite.UnrealReplayParser.UnrealObject;
 using Common.StreamHelpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using UnrealReplayParser.Chunk;
@@ -12,42 +14,56 @@ namespace UnrealReplayParser
     public partial class UnrealReplayVisitor : IDisposable
     {
 
-        public bool HaveLevelStreamingFixes()
+        public bool HasLevelStreamingFixes()
         {
             return (DemoHeader!.HeaderFlags & DemoHeader.ReplayHeaderFlags.HasStreamingFixes) >= 0;
         }
-        public virtual int ParsePacket( ChunkArchive reader )
+        public enum ReadPacketState
+        {
+            Success,
+            End,
+            Error
+        }
+
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/7d9919ac7bfd80b7483012eab342cb427d60e8c9/Engine/Source/Runtime/Engine/Private/DemoNetDriver.cpp#L3220
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public virtual ReadPacketState ParsePacket( ChunkArchive reader )
         {
             const int MaxBufferSize = 2 * 1024;
-            int outBufferSize = reader.ReadInt32();
-            if( outBufferSize > MaxBufferSize || outBufferSize < 0 )
-            {
-                throw new InvalidDataException( "Invalid packet size" );
-            }
-            if( outBufferSize == 0 ) return outBufferSize;
-            var outBuffer = reader.ReadBytes( outBufferSize );
-            ProcessRawPacket( new BitReader( outBuffer.ToArray() ) ); //TODO avoid array alloc
-            return outBufferSize;
+            int bufferSize = reader.ReadInt32();
+            if( bufferSize > MaxBufferSize || bufferSize < 0 ) return ReadPacketState.Error;
+            if( bufferSize == 0 ) return ReadPacketState.End;
+            var buffer = reader.HeapReadBytes( bufferSize );
+            if( ProcessRawPacket( new BitArchive( buffer, DemoHeader!, ReplayHeader! ) ) ) return ReadPacketState.Success;
+            return ReadPacketState.Error;
         }
         /// <summary>
         /// Was writed to support how Fortnite store replays.
         /// This may need to be upgrade to support other games, or some future version of Fortnite.
+        /// https://github.com/EpicGames/UnrealEngine/blob/7d9919ac7bfd80b7483012eab342cb427d60e8c9/Engine/Source/Runtime/Engine/Private/DemoNetDriver.cpp#L2848
         /// </summary>
         /// <param name="binaryReader"></param>
         /// <param name="replayDataInfo"></param>
         /// <returns></returns>
         public virtual bool ParsePlaybackPacket( ChunkArchive reader )
         {
-            bool appendPacket = true;
-            bool hasLevelStreamingFixes = true;//TODO: this method
-            int currentLevelIndex = reader.ReadInt32();//TODO: use replayVersion. HasLevelStreamingFixes
+            if( DemoHeader!.NetworkVersion >= DemoHeader.NetworkVersionHistory.multipleLevels )
+            {
+                int currentLevelIndex = reader.ReadInt32();
+            }
             float timeSeconds = reader.ReadSingle();
             if( float.IsNaN( timeSeconds ) )
             {
                 throw new InvalidDataException();
             }
-            ParseExportData( reader );//TODO: use replayVersion. HasLevelStreamingFixes
-            if( HaveLevelStreamingFixes() )
+            if( DemoHeader!.NetworkVersion >= DemoHeader.NetworkVersionHistory.levelStreamingFixes )
+            {
+                ParseExportData( reader );
+            }
+            if( HasLevelStreamingFixes() )
             {
                 uint streamingLevelscount = reader.ReadIntPacked();
                 for( int i = 0; i < streamingLevelscount; i++ )
@@ -60,7 +76,7 @@ namespace UnrealReplayParser
                 throw new NotSupportedException( "TODO" );
             }
             long skipExternalOffset = 0;
-            if( HaveLevelStreamingFixes() )
+            if( HasLevelStreamingFixes() )
             {
                 skipExternalOffset = reader.ReadInt64();
             }
@@ -70,21 +86,38 @@ namespace UnrealReplayParser
             }
 
             ParseExternalData( reader );
-            uint seenLevelIndex = 0;
-
-            //while( true )
-            //{
-            //    if( hasLevelStreamingFixes )
-            //    {
-            //        seenLevelIndex = reader.ReadIntPacked();
-            //    }
-            //    int amount = ParsePacket( reader );
-            //    if( amount == 0 ) break;
-            //    if( appendPacket ) continue;
-            //}//There is more data ?
-            return true;
+            return ReadPackets( reader );
         }
 
+        public virtual bool ReadPackets( ChunkArchive reader )
+        {
+            uint seenLevelIndex = 0;
+            while( true )
+            {
+                if( HasLevelStreamingFixes() )
+                {
+                    seenLevelIndex = reader.ReadIntPacked();
+                }
+                var result = ParsePacket( reader );
+                switch( result )
+                {
+                    case ReadPacketState.Success:
+                        return true;//TO REMOVE
+                        continue;
+                    case ReadPacketState.End:
+                        return true;
+                    case ReadPacketState.Error:
+                        return false;
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }//There is more data ?
+        }
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/7d9919ac7bfd80b7483012eab342cb427d60e8c9/Engine/Source/Runtime/Engine/Private/DemoNetDriver.cpp#L2106
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public virtual bool ParseExternalData( ChunkArchive reader )
         {
             while( true )
@@ -92,88 +125,19 @@ namespace UnrealReplayParser
                 uint externalDataBitsCount = reader.ReadIntPacked();
                 if( externalDataBitsCount == 0 ) return true;
                 uint netGuid = reader.ReadIntPacked();
-               reader.ReadBytes((int)(externalDataBitsCount + 7) >> 3);//TODO: We dont do anything with it yet. We burn byte now.
+                reader.ReadBytes( (int)(externalDataBitsCount + 7) >> 3 );//TODO: We dont do anything with it yet. We burn byte now.
             }
         }
-        public virtual bool ProcessRawPacket( BitReader reader )
+        public virtual bool ProcessRawPacket( BitArchive reader )
         {
             Incoming( reader );
             ReceivedPacket( reader );
-            if( !reader.AtEnd )
-            {
-                if( DemoHeader!.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_ACKS_INCLUDED_IN_HEADER )
-                {
-                    reader.ReadBit();
-                }
+            if( reader.Offset == reader.Length ) return true;
 
-                int startPos = (int)reader.BitPosition;
-                bool control = reader.ReadBit();
-                bool open = control ? reader.ReadBit() : false;
-                bool close = control ? reader.ReadBit() : false;
-
-                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_CLOSE_REASON )
-                {
-                    bool dormant = close ? reader.ReadBit() : false;
-
-                }
-                else
-                {
-                    uint closeReason = close ? reader.ReadSerialisedInt( 15 ) : 0;
-                }
-
-                bool isReplicationPaused = reader.ReadBit();
-                bool reliable = reader.ReadBit();
-
-                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_MAX_ACTOR_CHANNELS_CUSTOMIZATION )
-                {
-                    uint chIndex = reader.ReadSerialisedInt( 10240 );
-                }
-                else
-                {
-                    uint chIndex = reader.ReadIntPacked();//TODO: this don't work
-                }
-                bool hasPackageMapExports = reader.ReadBit();
-                bool hasMustBeMappedGUIDs = reader.ReadBit();
-                bool partial = reader.ReadBit();
-
-                if( reliable )
-                {
-                    if( true )
-                    {
-
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                }
-                else if( partial )
-                {
-
-                }
-                else
-                {
-                    //This is modifying a value but not reading int the reader
-                }
-
-                bool partialInitial = partial ? reader.ReadBit() : false;
-                bool partialFinal = partial ? reader.ReadBit() : false;
-                if( DemoHeader.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_CHANNEL_NAMES )
-                {
-                    throw new NotImplementedException();
-                }
-                else
-                {
-                    if(reliable || open)
-                    {
-
-                    }
-                }
-            }
             return true;
         }
         static Stream FileDump = File.OpenWrite( "dumppackets.dump" );
-        public virtual bool Incoming( BitReader reader )
+        public virtual bool Incoming( BitArchive reader )
         {
             reader.RemoveTrailingZeros();
             //We need to know the handlers components used in the
@@ -186,15 +150,33 @@ namespace UnrealReplayParser
             return true;
         }
 
-
-        public virtual bool ReceivedPacket( BitReader reader )
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/NetConnection.cpp#L1525
+        /// </summary>
+        /// <param name="ar"></param>
+        /// <returns></returns>
+        public virtual bool ReceivedPacket( BitArchive ar )
         {
-            ReadHeader( reader );
-            ReadPacketInfo( reader );
+            ReadHeader( ar );
+            ReadPacketInfo( ar );
+
+            //TODO LOOP while( !Reader.AtEnd() && State!=USOCK_Closed )
+            //while( ar.Offset < ar.Length )
+            {
+
+                if( DemoHeader!.EngineNetworkProtocolVersion < DemoHeader.EngineNetworkVersionHistory.HISTORY_ACKS_INCLUDED_IN_HEADER )
+                {
+                    ar.ReadBit();
+                }
+
+                InBunch bunch = ar.ReadInBunch();
+
+                int bunchDataBits = (int)ar.ReadUInt32( 2048 * 8 );
+            }
             return true;
         }
 
-        public virtual bool ReadHeader( BitReader reader )
+        public virtual bool ReadHeader( BitArchive reader )
         {
             uint header = reader.ReadUInt32();
             uint historyWordCount = GetHistoryWordCount( header );
@@ -205,14 +187,14 @@ namespace UnrealReplayParser
             return true;
         }
 
-        public virtual bool ReadPacketInfo( BitReader reader )
+        public virtual bool ReadPacketInfo( BitArchive reader )
         {
             bool hasServerFrameTime = reader.ReadBit();
             if( hasServerFrameTime )
             {
-                byte frameTimeByte = reader.ReadOneByte();
+                byte frameTimeByte = reader.ReadByte();
             }
-            byte remoteInKBytesPerSecondByte = reader.ReadOneByte();
+            byte remoteInKBytesPerSecondByte = reader.ReadByte();
             return true;
         }
 
@@ -226,11 +208,21 @@ namespace UnrealReplayParser
         const uint SequenceNumberBits = 14;
         const uint MaxSequenceHistoryLength = 256;
         #region ExportData
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/PackageMapClient.cpp#L1348
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public virtual bool ParseExportData( ChunkArchive reader )
         {
             return ParseNetFieldExports( reader )
                 && ParseNetExportGUIDs( reader );
         }
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/PackageMapClient.cpp#L1579
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public virtual bool ParseNetExportGUIDs( ChunkArchive reader )
         {
             uint guidCount = reader.ReadIntPacked();
@@ -240,6 +232,11 @@ namespace UnrealReplayParser
             }
             return true;
         }
+        /// <summary>
+        /// https://github.com/EpicGames/UnrealEngine/blob/70bc980c6361d9a7d23f6d23ffe322a2d6ef16fb/Engine/Source/Runtime/Engine/Private/PackageMapClient.cpp#L1497
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public virtual bool ParseNetFieldExports( ChunkArchive reader )
         {
             uint exportCount = reader.ReadIntPacked();
@@ -247,6 +244,7 @@ namespace UnrealReplayParser
             {
                 uint pathNameIndex = reader.ReadIntPacked();
                 uint wasExported = reader.ReadIntPacked();
+                Debug.Assert( wasExported == 0 || wasExported == 1 );
                 if( wasExported > 0 )
                 {
                     string pathName = reader.ReadString();

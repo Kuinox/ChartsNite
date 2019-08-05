@@ -31,10 +31,10 @@ namespace UnrealReplayParser
             uint time1 = await binaryReader.ReadUInt32Async();
             uint time2 = await binaryReader.ReadUInt32Async();
             int eventSizeInBytes = await binaryReader.ReadInt32Async();
+            Debug.Assert( eventSizeInBytes == binaryReader.Length - binaryReader.Position );
             using( IMemoryOwner<byte> uncompressed = await binaryReader.UncompressData() )
             {
-                return ParseCheckpointContent( new ChunkArchive( uncompressed.Memory, DemoHeader!.EngineNetworkProtocolVersion ), id, group, metadata, time1, time2 );
-                return true;
+                return ParseCheckpointContent( new ChunkArchive( uncompressed.Memory, DemoHeader!, ReplayHeader! ), id, group, metadata, time1, time2 );
             }
         }
 

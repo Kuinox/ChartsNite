@@ -1,5 +1,6 @@
 using ChartsNite.UnrealReplayParser;
 using ChartsNite.UnrealReplayParser.StreamArchive;
+using ChartsNite.UnrealReplayParser.UnrealObject;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,9 +26,9 @@ namespace UnrealReplayParser.UnrealObject
 
     }
 
-    public class StaticNameParsing
+    public static class StaticNameParsing
     {
-        public static StaticName ReadStaticName( Archive ar )
+        public static StaticName ReadStaticName( this Archive ar )
         {
             Span<byte> bits = ar.ReadBits( 1 );
             Debug.Assert( bits.Length == 1 );
@@ -46,7 +47,7 @@ namespace UnrealReplayParser.UnrealObject
                 }
 
                 if( nameIndex >= MAX_NETWORKED_HARDCODED_NAME ) throw new InvalidDataException();
-                return new StaticName( nameIndex, "", true ); //hard coded names in "UnrealNames.inl". Didn't searched it yet, i have no need of it right now.
+                return new StaticName( nameIndex, FName.FNames[(int)nameIndex], true );
             }
             else
             {
@@ -56,7 +57,7 @@ namespace UnrealReplayParser.UnrealObject
             }
         }
 
-        public static async ValueTask<StaticName> ReadStaticNameAsync( ArchiveAsync ar )
+        public static async ValueTask<StaticName> ReadStaticNameAsync( this ArchiveAsync ar )
         {
             Memory<byte> bits = await ar.ReadBitsAsync( 1 );
             Debug.Assert( bits.Length == 1 );

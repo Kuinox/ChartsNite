@@ -12,10 +12,12 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
 {
     public abstract class Archive
     {
-
-        public Archive( EngineNetworkVersionHistory engineNetVer )
+        public readonly DemoHeader DemoHeader;
+        public readonly ReplayHeader ReplayHeader;
+        public Archive(DemoHeader demoHeader, ReplayHeader replayHeader)
         {
-            EngineNetVer = engineNetVer;
+            DemoHeader = demoHeader;
+            ReplayHeader = replayHeader;
         }
 
         public abstract int Length { get; }
@@ -36,12 +38,13 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
         public abstract byte ReadByte();
         public abstract ushort ReadUInt16();
         public abstract Span<byte> ReadBits( long amount );
+        public abstract bool ReadBit();
 
         public abstract Span<byte> ReadBytes( int amount );
-
+        public abstract Memory<byte> HeapReadBytes( int amount );
         public abstract int RemainingByte { get; }
 
-        public EngineNetworkVersionHistory EngineNetVer { get; }
+        public EngineNetworkVersionHistory EngineNetVer => DemoHeader.EngineNetworkProtocolVersion;
 
         public string ReadString()
         {

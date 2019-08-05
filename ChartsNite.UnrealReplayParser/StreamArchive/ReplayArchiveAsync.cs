@@ -19,6 +19,10 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
             _reader = new BinaryReaderAsync( input, leaveOpen );
         }
 
+        public override long Position => _reader.BaseStream.Position;
+
+        public override long Length => _reader.BaseStream.Length;
+
         public void Dispose() => _reader.Dispose();
 
         public async ValueTask DisposeAsync() => await _reader.DisposeAsync();

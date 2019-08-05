@@ -11,7 +11,7 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
         readonly MemoryReader _reader;
 
 
-        public ChunkArchive(Memory<byte> memory, DemoHeader.EngineNetworkVersionHistory engineNetVer ) : base( engineNetVer )
+        public ChunkArchive( Memory<byte> memory, DemoHeader demoHeader, ReplayHeader replayHeader ) : base( demoHeader, replayHeader )
         {
             _reader = new MemoryReader( memory, Endianness.Little );
         }
@@ -25,11 +25,9 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
 
         public override byte ReadByte() => _reader.ReadOneByte();
 
-        public override Span<byte> ReadBytes( int amount ) => _reader.ReadBytes( amount ).Span;
-
         public override int ReadInt32() => _reader.ReadInt32();
 
-        
+
         public override ushort ReadUInt16() => _reader.ReadUInt16();
 
         public override uint ReadUInt32( uint max ) => _reader.ReadUInt32();
@@ -46,7 +44,7 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
         /// <returns></returns>
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public override uint ReadIntPacked()
-        {   
+        {
             uint value = 0;
             byte count = 0;
             bool more = true;
@@ -61,6 +59,13 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
             return value;
         }
 
+        public override Span<byte> ReadBytes( int amount ) => _reader.ReadBytes( amount ).Span;
 
+        public override Memory<byte> HeapReadBytes( int amount ) => _reader.ReadBytes( amount );
+
+        public override bool ReadBit()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

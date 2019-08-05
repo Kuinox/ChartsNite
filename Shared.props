@@ -1,7 +1,0 @@
-<Project>
-  <!-- SharedDir is the /Common directory. -->
-  <PropertyGroup>
-    <SharedDir>$(MSBuildThisFileDirectory)</SharedDir>
-    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
-  </PropertyGroup>
-</Project>

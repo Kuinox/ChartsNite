@@ -21,6 +21,8 @@ namespace ChartsNite.UnrealReplayParser.StreamArchive
             EngineNetVer = engineNetVer;
         }
 
+        public abstract long Position { get; }
+        public abstract long Length { get; }
         public abstract ValueTask<int> ReadInt32Async( uint max );
         public abstract ValueTask<int> ReadInt32Async();
 
