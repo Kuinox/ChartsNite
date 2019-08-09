@@ -150,7 +150,7 @@ namespace Common.StreamHelpers
             int positionStart = (int)(position / 8);
             try
             {
-                if( leftShift == 0 ) return _data[positionStart..positionStart + count].ToArray();
+                if( leftShift == 0 ) return _data[positionStart..(positionStart + count)].ToArray();
             }
             catch( ArgumentException )
             {
@@ -250,7 +250,7 @@ namespace Common.StreamHelpers
                 _data.Span[i] <<= bitToShift;
                 _data.Span[i] |= (byte)(_data.Span[i + 1] >> (8 - bitToShift));
             }
-            _data.Span[^1] <<= bitToShift;
+            _data.Span[_data.Length-1] <<= bitToShift;
         }
 
         public uint ReadUInt32( uint max )
