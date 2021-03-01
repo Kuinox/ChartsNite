@@ -1,3 +1,7 @@
+# Not maintened nor up to date.
+You are likely searching for this: 
+https://github.com/Shiqan/FortniteReplayDecompressor
+
 Fortnite replay parser.
 
 The only thing that it don't parse is the Network packets.  
