@@ -17,7 +17,7 @@
     <PackageReference Include="CK.Text" Version="8.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="5.1.0" />
+    <PackageReference Include="NuGet.Protocol" Version="5.9.3" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Credentials" Version="5.1.0" />
